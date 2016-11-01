@@ -1,0 +1,258 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  
+  <groupId>com.github.vencent-lu</groupId>
+  <artifactId>giants-cache</artifactId>
+  <version>1.0.4</version>
+  <packaging>pom</packaging>
+    
+  <name>giants-cache</name>
+  <description>Giants cache Framework and reusable components.</description>
+  <url>https://github.com/vencent-lu/giants-cache</url>
+  
+  <licenses>
+    <license>
+        <name>The Apache Software License, Version 2.0</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+  
+  <developers>
+	<developer>
+		<name>vencent.lu</name>
+		<email>scsedux@163.com</email>
+	</developer>
+  </developers>
+  
+  <scm>
+	<connection>scm:git:git@github.com:vencent-lu/giants-cache.git</connection>
+	<developerConnection>scm:git:git@github.com:vencent-lu/giants-cache.git</developerConnection>
+	<url>git@github.com:vencent-lu/giants-cache.git</url>
+  </scm>
+  
+  <modules>
+    <module>core</module>
+	<module>ehcache</module>
+	<module>memcached</module>
+	<module>redis</module>
+  </modules>
+  
+  <build>
+	<plugins>
+		<!-- Source -->
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-source-plugin</artifactId>
+			<executions>
+				<execution>
+					<id>attach-sources</id>
+					<goals>
+						<goal>jar</goal>
+					</goals>
+				</execution>
+			</executions>
+		</plugin>
+		<!-- Javadoc -->
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-javadoc-plugin</artifactId>
+			<version>2.9.1</version>
+			<executions>
+				<execution>
+					<phase>package</phase>
+					<goals>
+						<goal>jar</goal>
+					</goals>
+				</execution>
+			</executions>
+		</plugin>
+		<!-- GPG -->
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-gpg-plugin</artifactId>
+			<version>1.5</version>
+			<executions>
+				<execution>
+					<phase>verify</phase>
+					<goals>
+						<goal>sign</goal>
+					</goals>
+				</execution>
+			</executions>
+		</plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <source>1.7</source>
+            <target>1.7</target>
+          </configuration> 
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-eclipse-plugin</artifactId>
+          <configuration>
+            <wtpversion>2.0</wtpversion>
+            <downloadSources>true</downloadSources>
+            <downloadJavadocs>true</downloadJavadocs>
+          </configuration> 
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+  
+  <properties>
+    <!-- 项目版本定义 -->
+    <project-name>giants-cache</project-name>
+	
+	<!-- 依赖库版本定义 -->
+	<spring.version>4.2.5.RELEASE</spring.version>
+        
+    <!-- Plugin的属性定义 -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencyManagement>
+	  <dependencies>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>giants-cache-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>giants-cache-ehcache</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>giants-cache-memcached</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>giants-cache-redis</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+	  
+		<dependency>
+		  <groupId>${project.groupId}</groupId>
+		  <artifactId>giants-common</artifactId>
+		  <version>1.0.3</version>
+		</dependency>
+		<dependency>
+		  <groupId>${project.groupId}</groupId>
+		  <artifactId>giants-xmlmapping</artifactId>
+		  <version>1.0.0</version>
+		</dependency>
+		<dependency>
+		  <groupId>${project.groupId}</groupId>
+		  <artifactId>giants-web</artifactId>
+		  <version>1.0.3</version>
+		</dependency>
+		
+		<dependency>
+		  <groupId>commons-lang</groupId>
+		  <artifactId>commons-lang</artifactId>
+		  <version>2.6</version>
+		</dependency>
+		<dependency>
+		  <groupId>commons-collections</groupId>
+		  <artifactId>commons-collections</artifactId>
+		  <version>3.2.1</version>
+		</dependency>
+		<dependency>
+		  <groupId>org.slf4j</groupId>
+		  <artifactId>slf4j-api</artifactId>
+		  <version>1.6.6</version>
+		</dependency>
+		<dependency>
+		  <groupId>org.aspectj</groupId>
+		  <artifactId>aspectjweaver</artifactId>
+		  <version>1.7.4</version>
+		</dependency>
+		<dependency>
+		  <groupId>net.sf.ehcache</groupId>
+		  <artifactId>ehcache-core</artifactId>
+		  <version>2.6.6</version>
+		</dependency>
+		<dependency>
+		  <groupId>com.caucho</groupId>
+		  <artifactId>hessian</artifactId>
+		  <version>4.0.33</version>
+		</dependency>
+		<dependency>
+		  <groupId>redis.clients</groupId>
+		  <artifactId>jedis</artifactId>
+		  <version>2.8.1</version>
+		</dependency>
+		<dependency>
+		  <groupId>org.springframework.data</groupId>
+		  <artifactId>spring-data-redis</artifactId>
+		  <version>1.7.4.RELEASE</version>
+		  <exclusions>
+			<exclusion>
+				<groupId>org.springframework</groupId>                 
+				<artifactId>spring-oxm</artifactId>
+			</exclusion>
+			<exclusion>
+				<groupId>org.springframework</groupId>                 
+				<artifactId>spring-context</artifactId>
+			</exclusion>
+			<exclusion>
+				<groupId>org.springframework</groupId>                 
+				<artifactId>spring-context-support</artifactId>
+			</exclusion>
+			<exclusion>
+				<groupId>org.springframework</groupId>                 
+				<artifactId>spring-tx</artifactId>
+			</exclusion>
+			<exclusion>
+				<groupId>org.springframework</groupId>                 
+				<artifactId>spring-aop</artifactId>
+			</exclusion>
+			<exclusion>
+				<groupId>org.springframework</groupId>                 
+				<artifactId>spring-core</artifactId>
+			</exclusion>
+		  </exclusions>
+		</dependency>
+		<dependency>
+		  <groupId>org.springframework</groupId>
+		  <artifactId>spring-tx</artifactId>
+		  <version>${spring.version}</version>
+		</dependency>
+		<dependency>
+		  <groupId>org.springframework</groupId>
+		  <artifactId>spring-context</artifactId>
+		  <version>${spring.version}</version>
+		</dependency>
+		<dependency>
+		  <groupId>org.springframework</groupId>
+		  <artifactId>spring-web</artifactId>
+		  <version>${spring.version}</version>
+		</dependency>
+		<dependency>
+		  <groupId>javax.servlet</groupId>
+		  <artifactId>javax.servlet-api</artifactId>
+		  <version>3.0.1</version>
+		  <scope>provided</scope>
+		</dependency>
+	  </dependencies>
+  </dependencyManagement>
+  
+  <distributionManagement>
+    <snapshotRepository>
+		<id>oss</id>
+		<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+	</snapshotRepository>
+	<repository>
+		<id>oss</id>
+		<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+	</repository>
+  </distributionManagement>
+</project>
