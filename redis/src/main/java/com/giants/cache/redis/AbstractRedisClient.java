@@ -21,6 +21,30 @@ public abstract class AbstractRedisClient implements RedisClient {
 	
 	private SerializerFactory serializerFactory = new SerializerFactory();
 	
+	/**
+	 * List转数组后，类型不确定的情况下，需要对数据的每个元素做强转
+	 * 如 List.toArray() 方法得到 Object[] 不能确定是否能转成Serializable[]
+	 * @param serializables
+	 * @return
+	 */
+	protected Serializable[] conversionSerializableArray(
+			Serializable... serializables) {
+		if (serializables!=null && serializables.length == 1) {
+			Class<?> cls = serializables[0].getClass();
+			if (cls.isArray()
+					&& !Serializable.class.isAssignableFrom(cls
+							.getComponentType())) {
+				Object[] objArr = (Object[]) serializables[0];
+				Serializable[] seriArr = new Serializable[objArr.length];
+				for (int i = 0; i < objArr.length; i++) {
+					seriArr[i] = (Serializable) objArr[i];
+				}
+				return seriArr;
+			}
+		}
+		return serializables;
+	}
+	
 	protected byte[] serializationKey(Serializable key) {
 		if (key instanceof String) {
 			return ((String) key).getBytes();

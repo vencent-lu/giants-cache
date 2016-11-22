@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 
 import com.giants.cache.redis.RedisClient.ExpirationUnit;
 import com.giants.cache.redis.RedisClient.SetOption;
@@ -204,6 +205,7 @@ public class JedisClientImpl extends AbstractRedisClient {
 
 	@Override
 	public void del(Serializable... keys) {
+		keys = this.conversionSerializableArray(keys);
 		if (keys != null && keys.length > 0) {			
 			byte[][] bytesArray = new byte[keys.length][];
 			for (int i=0; i<keys.length; i++) {
@@ -240,7 +242,8 @@ public class JedisClientImpl extends AbstractRedisClient {
 	}
 	
 	@Override
-	public List<?> hmget(Serializable key, Serializable... fields) {
+	public List<Serializable> hmget(Serializable key, Serializable... fields) {
+		fields = this.conversionSerializableArray(fields);
 		if (key != null && fields != null && fields.length > 0) {			
 			byte[][] fieldBytesArray = new byte[fields.length][];
 			for (int i=0; i<fields.length; i++) {
@@ -292,7 +295,7 @@ public class JedisClientImpl extends AbstractRedisClient {
 	}
 	
 	@Override
-	public void hmset(Serializable key, Map<?,?> hash){
+	public void hmset(Serializable key, Map<?, ?> hash){
 		if (key != null && hash != null && !hash.isEmpty()) {
 			Map<byte[],byte[]> bytesHash = new HashMap<byte[],byte[]>();
 			Iterator<?> it = hash.entrySet().iterator();
@@ -335,6 +338,7 @@ public class JedisClientImpl extends AbstractRedisClient {
 	
 	@Override
 	public void hdel(Serializable key, Serializable... fields) {
+		fields = this.conversionSerializableArray(fields);
 		if (key != null && fields != null && fields.length > 0) {
 			byte[][] fieldBytesArray = new byte[fields.length][];
 			for (int i=0; i<fields.length; i++) {
@@ -354,7 +358,7 @@ public class JedisClientImpl extends AbstractRedisClient {
 	}
 		
 	@Override
-	public Set<?> hkeys(Serializable key) {
+	public Set<Serializable> hkeys(Serializable key) {
 		if (key != null) {
 			Jedis jedis = null;
 			Set<byte[]> bytesKeys = null;
@@ -380,7 +384,7 @@ public class JedisClientImpl extends AbstractRedisClient {
 	}
 	
 	@Override
-	public List<?> hvals(Serializable key) {
+	public List<Serializable> hvals(Serializable key) {
 		if (key != null) {
 			Jedis jedis = null;
 			List<byte[]> bytesValues = null;
@@ -403,9 +407,35 @@ public class JedisClientImpl extends AbstractRedisClient {
 		}
 		return null;
 	}
+	
+	@Override
+	public Map<Serializable, Serializable> hgetall(Serializable key) {
+		if (key != null) {
+			Jedis jedis = null;
+			Map<byte[], byte[]> entryByteMap = null;
+			try {
+				jedis = this.jedisPool.getResource();
+				entryByteMap = jedis.hgetAll(this.serializationKey(key));
+			} catch (JedisException e) {
+				this.jedisPool.returnBrokenResource(jedis);
+				throw e;
+			} finally {
+				this.jedisPool.returnResource(jedis);
+			}
+			if (MapUtils.isNotEmpty(entryByteMap)) {
+				Map<Serializable, Serializable> entryMap = new HashMap<Serializable, Serializable>();
+				for (Entry<byte[], byte[]> entry : entryByteMap.entrySet()) {
+					entryMap.put(this.deserialization(entry.getKey()), this.deserialization(entry.getValue()));
+				}
+				return entryMap;
+			}			
+		}
+		return null;
+	}
 
 	@Override
-	public void sadd(Serializable key, Serializable... members) {
+	public long sadd(Serializable key, Serializable... members) {
+		members = this.conversionSerializableArray(members);
 		if (key != null && members != null && members.length > 0) {
 			Jedis jedis = null;
 			try {
@@ -414,7 +444,7 @@ public class JedisClientImpl extends AbstractRedisClient {
 				for (int i=0; i<members.length; i++) {
 					objBytes[i] = this.serialization(members[i]);
 				}
-				jedis.sadd(this.serializationKey(key), objBytes);
+				return jedis.sadd(this.serializationKey(key), objBytes);
 			} catch (JedisException e) {
 				this.jedisPool.returnBrokenResource(jedis);
 				throw e;
@@ -422,6 +452,7 @@ public class JedisClientImpl extends AbstractRedisClient {
 				this.jedisPool.returnResource(jedis);
 			}
 		}
+		return 0;
 	}
 		
 	@Override
@@ -444,7 +475,8 @@ public class JedisClientImpl extends AbstractRedisClient {
 	}
 
 	@Override
-	public void srem(Serializable key, Serializable... members) {
+	public long srem(Serializable key, Serializable... members) {
+		members = this.conversionSerializableArray(members);
 		if (key != null && members != null && members.length > 0) {
 			Jedis jedis = null;
 			try {
@@ -453,7 +485,7 @@ public class JedisClientImpl extends AbstractRedisClient {
 				for (int i=0; i<members.length; i++) {
 					objBytes[i] = this.serialization(members[i]);
 				}
-				jedis.srem(this.serializationKey(key), objBytes);
+				return jedis.srem(this.serializationKey(key), objBytes);
 			} catch (JedisException e) {
 				this.jedisPool.returnBrokenResource(jedis);
 				throw e;
@@ -461,10 +493,11 @@ public class JedisClientImpl extends AbstractRedisClient {
 				this.jedisPool.returnResource(jedis);
 			}
 		}
+		return 0;
 	}
 	
 	@Override
-	public Set<?> smembers(Serializable key) {
+	public Set<Serializable> smembers(Serializable key) {
 		if (key != null) {
 			Jedis jedis = null;
 			Set<byte[]> bytesKeys = null;

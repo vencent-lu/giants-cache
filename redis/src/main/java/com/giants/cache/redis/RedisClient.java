@@ -117,7 +117,7 @@ public interface RedisClient {
 	 * @param fields 一个或多个域
 	 * @return
 	 */
-	List<?> hmget(Serializable key, Serializable... fields);
+	List<Serializable> hmget(Serializable key, Serializable... fields);
 	
 	/**
 	 * 返回哈希表 key 中，给定域的值。
@@ -133,7 +133,7 @@ public interface RedisClient {
 	 * @param key 哈希表 key
 	 * @param hash hash表
 	 */
-	void hmset(Serializable key, Map<?,?> hash);
+	void hmset(Serializable key, Map<?, ?> hash);
 	
 	/**
 	 * 将域-值 对 设置到哈希表 key 中。
@@ -156,21 +156,29 @@ public interface RedisClient {
 	 * @param key 哈希表 key
 	 * @return
 	 */
-	Set<?> hkeys(Serializable key);
+	Set<Serializable> hkeys(Serializable key);
 	
 	/**
 	 * 返回哈希表 key 中所有域的值。
 	 * @param key 哈希表 key
 	 * @return 所有域的值
 	 */
-	List<?> hvals(Serializable key);
+	List<Serializable> hvals(Serializable key);
+	
+	/**
+	 * 返回哈希表 key 中，所有的域和值。
+	 * @param key 哈希表 key
+	 * @return 所有的域和值
+	 */
+	Map<Serializable, Serializable> hgetall(Serializable key);
 	
 	/**
 	 * 将一个或多个 member 元素加入到集合 key 当中，已经存在于集合的 member 元素将被忽略。
 	 * @param key 集合Key
 	 * @param members 一个或多个 member 元素
+	 * @return 被成功添加的新成员的数量，不包括那些被更新的、已经存在的成员。
 	 */
-	void sadd(Serializable key, Serializable... members);
+	long sadd(Serializable key, Serializable... members);
 	
 	/**
 	 * 判断 member 元素是否集合 key 的成员。
@@ -184,15 +192,16 @@ public interface RedisClient {
 	 * 移除集合 key 中的一个或多个 member 元素，不存在的 member 元素会被忽略。
 	 * @param key 集合Key
 	 * @param members 一个或多个 member 元素
+	 * @return 被成功移除的成员的数量，不包括被忽略的成员。
 	 */
-	void srem(Serializable key, Serializable... members);
+	long srem(Serializable key, Serializable... members);
 	
 	/**
 	 * 返回集合 key 中的所有成员, 不存在的 key 被视为空集合
 	 * @param key 集合Key
 	 * @return 所有成员
 	 */
-	Set<?> smembers(Serializable key);
+	Set<Serializable> smembers(Serializable key);
 	
 	/**
 	 * 返回集合 key 中的所有成员(字节数组), 不存在的 key 被视为空集合
@@ -200,6 +209,135 @@ public interface RedisClient {
 	 * @return 所有成员(字节数组)
 	 */
 	Set<byte[]> smembers(byte[] key);
+	/*
+	*//**
+	 * 将一个或多个 Tuple(member 元素及其 score 值)加入到有序集 key 当中。
+	 * @param key 有序集合key
+	 * @param tuples 添加的有序集合元素
+	 * @return
+	 *//*
+	long zadd(Serializable key, Tuple... tuples);
+	
+	*//**
+	 * 返回有序集 key 的基数。集合大小，当 key 不存在时，返回 0 。
+	 * @param key 有序集合key
+	 * @return 集合大小
+	 *//*
+	long zcard(Serializable key);
+	
+	*//**
+	 * 返回有序集 key 中， score 值在 min 和 max 之间(默认包括 score 值等于 min 或 max )的成员的数量。
+	 * @param key 有序集合key
+	 * @param min score最小值 为null表示 -inf(负无穷大)
+	 * @param max score最大值 为null表示 +inf(正无穷大)
+	 * @return score 值在 min 和 max 之间的成员的数量。
+	 *//*
+	long zcount(Serializable key, Double min, Double max);
+	
+	*//**
+	 * 为有序集 key 的成员 member 的 score 值加上增量 increment 。
+	 * @param key 有序集合key
+	 * @param increment 增加值，可以为负数
+	 * @param member 成员
+	 * @return 增加后的score值
+	 *//*
+	double zincrby(Serializable key, double increment, Serializable member);
+	
+	*//**
+	 * 计算给定的一个或多个有序集的交集 并将该交集(结果集)储存到 destination 。
+	 * @param destKey 目标集合Key
+	 * @param keies 需要计算交集的多个集合
+	 * @return 保存到 destination 的结果集的基数。
+	 *//*
+	long zinterstore(Serializable destKey, Serializable... keies);
+	
+	sdfsfsdfsdf
+	long zinterstore(Serializable destKey, Aggregate aggregate, int[] weights, byte[]... sets);
+	
+	*//**
+	 * 返回有序集 key 中，成员 member 的 score 值。
+	 * @param key 有序集合key
+	 * @param member 成员
+	 * @return 成员score 值
+	 *//*
+	double zscore(Serializable key, Serializable member);
+	
+	*//**
+	 * 移除有序集 key 中的一个或多个成员，不存在的成员将被忽略。
+	 * @param key 有序集合key
+	 * @param members 成员
+	 * @return 被成功移除的成员的数量，不包括被忽略的成员。
+	 *//*
+	long zrem(Serializable key, Serializable... members);
+	
+	*//**
+	 * 返回有序集 key 中，指定区间内的成员。
+	 * @param key 有序集合key
+	 * @param begin 开始下标 0 表示第一个 -1 表示最后一个
+	 * @param end 结束下标 0 表示第一个 -1 表示最后一个
+	 * @return 所有成员
+	 *//*
+	Set<Serializable> zrange(Serializable key, long begin, long end);
+	
+	*//**
+	 * 返回有序集 key 中成员 member 的排名。其中有序集成员按 score 值递增(从小到大)顺序排列。
+	 * 排名以 0 为底，也就是说， score 值最小的成员排名为 0 。
+	 * @param key 有序集合key
+	 * @param member 成员
+	 * @return 排名
+	 *//*
+	long zRank(Serializable key, Serializable member);
+	
+	*//**
+	 * 返回有序集 key 中，指定区间内的成员(包含score分娄)。
+	 * @param key 有序集合key
+	 * @param begin 开始下标 0 表示第一个 -1 表示最后一个
+	 * @param end 结束下标 0 表示第一个 -1 表示最后一个
+	 * @return 所有成员(包含score分娄)
+	 *//*
+	Set<Tuple> zrangeWithScores(Serializable key, long begin, long end);
+	
+	*//**
+	 * 返回有序集 key 中，所有 score 值介于 min 和 max 之间(包括等于 min 或 max )的成员。有序集成员按 score 值递增(从小到大)次序排列。
+	 * @param key 有序集合key
+	 * @param min score最小值 为null表示 -inf(负无穷大)
+	 * @param max score最大值 为null表示 +inf(正无穷大)
+	 * @return 指定区间内的有序集成员的列表。
+	 *//*
+	Set<Serializable> zrangeByScore(Serializable key, Double min, Double max);
+	
+	*//**
+	 * 返回有序集 key 中，所有 score 值介于 min 和 max 之间(包括等于 min 或 max )的成员。有序集成员按 score 值递增(从小到大)次序排列。
+	 * 支持分页功能
+	 * @param key 有序集合key
+	 * @param min score最小值 为null表示 -inf(负无穷大)
+	 * @param max score最大值 为null表示 +inf(正无穷大)
+	 * @param offset 起始座标
+	 * @param count 返回数量
+	 * @return 指定区间内的有序集成员的列表(分页)。
+	 *//*
+	Set<Serializable> zrangeByScore(Serializable key, Double min, Double max, long offset, long count);
+	
+	*//**
+	 * 返回有序集 key 中，所有 score 值介于 min 和 max 之间(包括等于 min 或 max )的成员。有序集成员按 score 值递增(从小到大)次序排列。
+	 * @param key 有序集合key
+	 * @param min score最小值 为null表示 -inf(负无穷大)
+	 * @param max score最大值 为null表示 +inf(正无穷大)
+	 * @return 指定区间内，带有 score 值的有序集成员的列表。
+	 *//*
+	Set<Tuple> zrangeByScoreWithScores(Serializable key, Double min, Double max);
+	
+	*//**
+	 * 返回有序集 key 中，所有 score 值介于 min 和 max 之间(包括等于 min 或 max )的成员。有序集成员按 score 值递增(从小到大)次序排列。
+	 * 支持分页功能
+	 * @param key 有序集合key
+	 * @param min score最小值 为null表示 -inf(负无穷大)
+	 * @param max score最大值 为null表示 +inf(正无穷大)
+	 * @param offset 起始座标
+	 * @param count 返回数量
+	 * @return 指定区间内，带有 score 值的有序集成员的列表(分页)。
+	 *//*
+	Set<Tuple> zrangeByScoreWithScores(Serializable key, Double min, Double max, long offset, long count);*/
 	
 	/**
 	 * 将对象序列化为 字节数组
