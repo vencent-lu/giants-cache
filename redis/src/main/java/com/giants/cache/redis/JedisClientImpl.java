@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,6 +16,7 @@ import java.util.Map.Entry;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.ArrayUtils;
 
 import com.giants.cache.redis.RedisClient.ExpirationUnit;
 import com.giants.cache.redis.RedisClient.SetOption;
@@ -527,6 +529,116 @@ public class JedisClientImpl extends AbstractRedisClient {
 			try {
 				jedis = this.jedisPool.getResource();
 				return jedis.smembers(key);
+			} catch (JedisException e) {
+				this.jedisPool.returnBrokenResource(jedis);
+				throw e;
+			} finally {
+				this.jedisPool.returnResource(jedis);
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public long zadd(Serializable key, Tuple... tuples) {
+		if (key != null && ArrayUtils.isNotEmpty(tuples)) {
+			Jedis jedis = null;
+			try {
+				jedis = this.jedisPool.getResource();
+				Map<byte[], Double> scoreMembers = new HashMap<byte[], Double>();
+				for (Tuple tuple : tuples) {
+					scoreMembers.put(this.serialization(tuple.getMember()), tuple.getScore());
+				}
+				return jedis.zadd(this.serializationKey(key), scoreMembers);
+			} catch (JedisException e) {
+				this.jedisPool.returnBrokenResource(jedis);
+				throw e;
+			} finally {
+				this.jedisPool.returnResource(jedis);
+			}
+		}
+		return 0;
+	}
+
+	@Override
+	public long zcount(Serializable key, Range range) {
+		if (key != null && range != null) {
+			Jedis jedis = null;
+			try {
+				jedis = this.jedisPool.getResource();
+				return jedis.zcount(this.serializationKey(key),
+						range.minToBytes(), range.maxToBytes());
+			} catch (JedisException e) {
+				this.jedisPool.returnBrokenResource(jedis);
+				throw e;
+			} finally {
+				this.jedisPool.returnResource(jedis);
+			}
+		}
+		return 0;
+	}
+
+	@Override
+	public long zremrangeByScore(Serializable key, Range range) {
+		if (key != null && range != null) {
+			Jedis jedis = null;
+			try {
+				jedis = this.jedisPool.getResource();
+				return jedis.zremrangeByScore(this.serializationKey(key),
+						range.minToBytes(), range.maxToBytes());
+			} catch (JedisException e) {
+				this.jedisPool.returnBrokenResource(jedis);
+				throw e;
+			} finally {
+				this.jedisPool.returnResource(jedis);
+			}
+		}
+		return 0;
+	}
+
+	@Override
+	public Set<Serializable> zrevrangeByScore(Serializable key, Range range) {
+		if (key != null && range != null) {
+			Jedis jedis = null;
+			try {
+				jedis = this.jedisPool.getResource();
+				Set<byte[]> memberByteSet = jedis.zrevrangeByScore(
+						this.serializationKey(key), range.maxToBytes(),
+						range.minToBytes());
+				if (CollectionUtils.isNotEmpty(memberByteSet)) {
+					Set<Serializable> memberSet = new LinkedHashSet<Serializable>();
+					for (byte[] memberByte : memberByteSet) {
+						memberSet.add(this.deserialization(memberByte));
+					}
+					return memberSet;
+				}
+			} catch (JedisException e) {
+				this.jedisPool.returnBrokenResource(jedis);
+				throw e;
+			} finally {
+				this.jedisPool.returnResource(jedis);
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public Set<Serializable> zrevrangeByScore(Serializable key, Range range,
+			int offset, int count) {
+		if (key != null && range != null) {
+			Jedis jedis = null;
+			try {
+				jedis = this.jedisPool.getResource();
+				Set<byte[]> memberByteSet = jedis.zrevrangeByScore(
+						this.serializationKey(key), range.maxToBytes(),
+						range.minToBytes(), offset, count);
+				if (CollectionUtils.isNotEmpty(memberByteSet)) {
+					Set<Serializable> memberSet = new LinkedHashSet<Serializable>();
+					for (byte[] memberByte : memberByteSet) {
+						memberSet.add(this.deserialization(memberByte));
+					}
+					return memberSet;
+				}
 			} catch (JedisException e) {
 				this.jedisPool.returnBrokenResource(jedis);
 				throw e;

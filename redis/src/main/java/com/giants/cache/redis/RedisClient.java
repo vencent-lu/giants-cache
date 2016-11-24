@@ -209,14 +209,78 @@ public interface RedisClient {
 	 * @return 所有成员(字节数组)
 	 */
 	Set<byte[]> smembers(byte[] key);
-	/*
-	*//**
+	
+	/**
 	 * 将一个或多个 Tuple(member 元素及其 score 值)加入到有序集 key 当中。
 	 * @param key 有序集合key
 	 * @param tuples 添加的有序集合元素
 	 * @return
+	 */
+	long zadd(Serializable key, Tuple... tuples);	
+	
+	/**
+	 * 返回有序集 key 中， score 值在 range 内的成员的数量。
+	 * @param key 有序集合key
+	 * @param range score 取值范围
+	 * @return score 值在 min 和 max 之间的成员的数量。
+	 */
+	long zcount(Serializable key, Range range);
+	
+	/**
+	 * 移除有序集 key 中，所有 score 值介于 range 内的成员。
+	 * @param key 有序集合key
+	 * @param range score 取值范围
+	 * @return 被移除成员的数量
+	 */
+	long zremrangeByScore(Serializable key, Range range);
+	
+	/**
+	 * 返回有序集 key 中，所有 score 值介于 range内 的成员。有序集成员按 score 值递增(从大到小)次序排列。
+	 * @param key 有序集合key
+	 * @param range score 取值范围
+	 * @return 指定区间内的有序集成员的列表。
+	 */
+	Set<Serializable> zrevrangeByScore(Serializable key, Range range);
+	
+	/**
+	 * 返回有序集 key 中，所有 score 值介于 range 内的成员。有序集成员按 score 值递增(从大到小)次序排列。
+	 * 支持分页功能
+	 * @param key 有序集合key
+	 * @param range score 取值范围
+	 * @param offset 起始座标
+	 * @param count 返回数量
+	 * @return 指定区间内的有序集成员的列表(分页)。
+	 */
+	Set<Serializable> zrevrangeByScore(Serializable key, Range range, int offset, int count);
+	
+	
+	
+	
+	
+	
+	
+	
+	/*
+	*//**
+	 * 返回有序集 key 中，所有 score 值介于 min 和 max 之间(包括等于 min 或 max )的成员。有序集成员按 score 值递增(从小到大)次序排列。
+	 * @param key 有序集合key
+	 * @param min score最小值 为null表示 -inf(负无穷大)
+	 * @param max score最大值 为null表示 +inf(正无穷大)
+	 * @return 指定区间内的有序集成员的列表。
 	 *//*
-	long zadd(Serializable key, Tuple... tuples);
+	Set<Serializable> zrangeByScore(Serializable key, Double min, Double max);
+	
+	*//**
+	 * 返回有序集 key 中，所有 score 值介于 min 和 max 之间(包括等于 min 或 max )的成员。有序集成员按 score 值递增(从小到大)次序排列。
+	 * 支持分页功能
+	 * @param key 有序集合key
+	 * @param min score最小值 为null表示 -inf(负无穷大)
+	 * @param max score最大值 为null表示 +inf(正无穷大)
+	 * @param offset 起始座标
+	 * @param count 返回数量
+	 * @return 指定区间内的有序集成员的列表(分页)。
+	 *//*
+	Set<Serializable> zrangeByScore(Serializable key, Double min, Double max, long offset, long count);
 	
 	*//**
 	 * 返回有序集 key 的基数。集合大小，当 key 不存在时，返回 0 。
@@ -224,15 +288,6 @@ public interface RedisClient {
 	 * @return 集合大小
 	 *//*
 	long zcard(Serializable key);
-	
-	*//**
-	 * 返回有序集 key 中， score 值在 min 和 max 之间(默认包括 score 值等于 min 或 max )的成员的数量。
-	 * @param key 有序集合key
-	 * @param min score最小值 为null表示 -inf(负无穷大)
-	 * @param max score最大值 为null表示 +inf(正无穷大)
-	 * @return score 值在 min 和 max 之间的成员的数量。
-	 *//*
-	long zcount(Serializable key, Double min, Double max);
 	
 	*//**
 	 * 为有序集 key 的成员 member 的 score 值加上增量 increment 。
@@ -251,7 +306,7 @@ public interface RedisClient {
 	 *//*
 	long zinterstore(Serializable destKey, Serializable... keies);
 	
-	sdfsfsdfsdf
+	sdfsdf
 	long zinterstore(Serializable destKey, Aggregate aggregate, int[] weights, byte[]... sets);
 	
 	*//**
@@ -260,15 +315,7 @@ public interface RedisClient {
 	 * @param member 成员
 	 * @return 成员score 值
 	 *//*
-	double zscore(Serializable key, Serializable member);
-	
-	*//**
-	 * 移除有序集 key 中的一个或多个成员，不存在的成员将被忽略。
-	 * @param key 有序集合key
-	 * @param members 成员
-	 * @return 被成功移除的成员的数量，不包括被忽略的成员。
-	 *//*
-	long zrem(Serializable key, Serializable... members);
+	double zscore(Serializable key, Serializable member);	
 	
 	*//**
 	 * 返回有序集 key 中，指定区间内的成员。
@@ -295,29 +342,8 @@ public interface RedisClient {
 	 * @param end 结束下标 0 表示第一个 -1 表示最后一个
 	 * @return 所有成员(包含score分娄)
 	 *//*
-	Set<Tuple> zrangeWithScores(Serializable key, long begin, long end);
-	
-	*//**
-	 * 返回有序集 key 中，所有 score 值介于 min 和 max 之间(包括等于 min 或 max )的成员。有序集成员按 score 值递增(从小到大)次序排列。
-	 * @param key 有序集合key
-	 * @param min score最小值 为null表示 -inf(负无穷大)
-	 * @param max score最大值 为null表示 +inf(正无穷大)
-	 * @return 指定区间内的有序集成员的列表。
-	 *//*
-	Set<Serializable> zrangeByScore(Serializable key, Double min, Double max);
-	
-	*//**
-	 * 返回有序集 key 中，所有 score 值介于 min 和 max 之间(包括等于 min 或 max )的成员。有序集成员按 score 值递增(从小到大)次序排列。
-	 * 支持分页功能
-	 * @param key 有序集合key
-	 * @param min score最小值 为null表示 -inf(负无穷大)
-	 * @param max score最大值 为null表示 +inf(正无穷大)
-	 * @param offset 起始座标
-	 * @param count 返回数量
-	 * @return 指定区间内的有序集成员的列表(分页)。
-	 *//*
-	Set<Serializable> zrangeByScore(Serializable key, Double min, Double max, long offset, long count);
-	
+	Set<Tuple> zrangeWithScores(Serializable key, long begin, long end);	
+		
 	*//**
 	 * 返回有序集 key 中，所有 score 值介于 min 和 max 之间(包括等于 min 或 max )的成员。有序集成员按 score 值递增(从小到大)次序排列。
 	 * @param key 有序集合key

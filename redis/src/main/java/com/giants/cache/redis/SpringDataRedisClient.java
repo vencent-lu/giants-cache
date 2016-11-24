@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,8 +16,12 @@ import java.util.Map.Entry;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.DefaultTuple;
 import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.connection.RedisZSetCommands;
+import org.springframework.data.redis.connection.RedisZSetCommands.Limit;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 
@@ -499,6 +504,127 @@ public class SpringDataRedisClient extends AbstractRedisClient {
 					return connection.sMembers(key);
 				}
 			});
+		}
+		return null;
+	}
+	
+	@Override
+	public long zadd(Serializable key, Tuple... tuples) {
+		if (key != null && ArrayUtils.isNotEmpty(tuples)) {
+			final byte[] keyByte = this.serializationKey(key);
+			final Set<RedisZSetCommands.Tuple> tupleSet = new HashSet<RedisZSetCommands.Tuple>();
+			for (Tuple tuple : tuples) {
+				tupleSet.add(new DefaultTuple(this.serialization(tuple.getMember()), tuple.getScore()));
+			}
+			return this.redisTemplate.execute(new RedisCallback<Long>() {
+
+				@Override
+				public Long doInRedis(RedisConnection connection)
+						throws DataAccessException {
+					return connection.zAdd(keyByte, tupleSet);
+				}
+			});
+		}
+		return 0;
+	}
+	
+	private RedisZSetCommands.Range conversionRange(Range range){
+		RedisZSetCommands.Range dataRange = RedisZSetCommands.Range.range();
+		if (range.getMin().getValue() != null) {
+			if (range.getMin().isIncluding()) {
+				dataRange.gte(range.getMin().getValue());
+			} else {
+				dataRange.gt(range.getMin().getValue());
+			}
+		}
+		if (range.getMax().getValue() != null) {
+			if (range.getMax().isIncluding()) {
+				dataRange.lte(range.getMax());
+			} else {
+				dataRange.lt(range.getMax());
+			}
+		}
+		return dataRange;
+	}
+
+	@Override
+	public long zcount(Serializable key,final Range range) {
+		if (key != null) {
+			final byte[] keyByte = this.serializationKey(key);
+			return this.redisTemplate.execute(new RedisCallback<Long>() {
+
+				@Override
+				public Long doInRedis(RedisConnection connection)
+						throws DataAccessException {
+					return connection.zCount(keyByte, conversionRange(range));
+				}
+			});
+		}
+		return 0;
+	}
+
+	@Override
+	public long zremrangeByScore(Serializable key, final Range range) {
+		if (key != null) {
+			final byte[] keyByte = this.serializationKey(key);
+			return this.redisTemplate.execute(new RedisCallback<Long>() {
+
+				@Override
+				public Long doInRedis(RedisConnection connection)
+						throws DataAccessException {
+					return connection.zRemRangeByScore(keyByte, conversionRange(range));
+				}
+			});
+		}
+		return 0;
+	}
+
+	@Override
+	public Set<Serializable> zrevrangeByScore(Serializable key,final Range range) {
+		if (key != null) {
+			final byte[] keyByte = this.serializationKey(key);
+			Set<byte[]> memberByteSet = this.redisTemplate.execute(new RedisCallback<Set<byte[]>>() {
+
+				@Override
+				public Set<byte[]> doInRedis(RedisConnection connection)
+						throws DataAccessException {
+					return connection.zRevRangeByScore(keyByte, conversionRange(range));
+				}
+			});
+			if (CollectionUtils.isNotEmpty(memberByteSet)) {
+				Set<Serializable> memberSet = new LinkedHashSet<Serializable>();
+				for (byte[] memberByte : memberByteSet) {
+					memberSet.add(this.deserialization(memberByte));
+				}
+				return memberSet;
+			}			
+		}
+		return null;
+	}
+
+	@Override
+	public Set<Serializable> zrevrangeByScore(Serializable key, final Range range,
+		final	int offset, final int count) {
+		if (key != null) {
+			final byte[] keyByte = this.serializationKey(key);
+			Set<byte[]> memberByteSet = this.redisTemplate
+					.execute(new RedisCallback<Set<byte[]>>() {
+
+						@Override
+						public Set<byte[]> doInRedis(RedisConnection connection)
+								throws DataAccessException {
+							return connection.zRevRangeByScore(keyByte,
+									conversionRange(range), Limit.limit()
+											.offset(offset).count(count));
+						}
+					});
+			if (CollectionUtils.isNotEmpty(memberByteSet)) {
+				Set<Serializable> memberSet = new LinkedHashSet<Serializable>();
+				for (byte[] memberByte : memberByteSet) {
+					memberSet.add(this.deserialization(memberByte));
+				}
+				return memberSet;
+			}			
 		}
 		return null;
 	}
