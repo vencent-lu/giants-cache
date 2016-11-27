@@ -12,9 +12,9 @@ import java.io.Serializable;
 public class Tuple {
 	
 	private final Serializable member;
-	private final double score;
+	private final Number score;
 	
-	public Tuple(Serializable member, double score) {
+	public Tuple(Serializable member, Number score) {
 		super();
 		this.member = member;
 		this.score = score;
@@ -24,7 +24,7 @@ public class Tuple {
 		return member;
 	}
 
-	public double getScore() {
+	public Number getScore() {
 		return score;
 	}
 

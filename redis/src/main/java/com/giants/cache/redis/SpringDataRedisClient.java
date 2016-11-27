@@ -514,7 +514,7 @@ public class SpringDataRedisClient extends AbstractRedisClient {
 			final byte[] keyByte = this.serializationKey(key);
 			final Set<RedisZSetCommands.Tuple> tupleSet = new HashSet<RedisZSetCommands.Tuple>();
 			for (Tuple tuple : tuples) {
-				tupleSet.add(new DefaultTuple(this.serialization(tuple.getMember()), tuple.getScore()));
+				tupleSet.add(new DefaultTuple(this.serialization(tuple.getMember()), tuple.getScore().doubleValue()));
 			}
 			return this.redisTemplate.execute(new RedisCallback<Long>() {
 
@@ -528,6 +528,44 @@ public class SpringDataRedisClient extends AbstractRedisClient {
 		return 0;
 	}
 	
+	@Override
+	public Double zscore(Serializable key, Serializable member) {
+		if (key != null && member != null) {
+			final byte[] keyByte = this.serializationKey(key);
+			final byte[] memberByte = this.serialization(member);
+			return this.redisTemplate.execute(new RedisCallback<Double>() {
+
+				@Override
+				public Double doInRedis(RedisConnection connection)
+						throws DataAccessException {
+					return connection.zScore(keyByte, memberByte);
+				}
+			});
+		}
+		return null;
+	}
+
+	@Override
+	public long zrem(Serializable key, Serializable... members) {
+		members = this.conversionSerializableArray(members);
+		if (key != null && members != null && members.length > 0) {
+			final byte[] keyByte = this.serializationKey(key);
+			final byte[][] objBytes = new byte[members.length][];
+			for (int i=0; i<members.length; i++) {
+				objBytes[i] = this.serialization(members[i]);
+			}
+			return this.redisTemplate.execute(new RedisCallback<Long>() {
+
+				@Override
+				public Long doInRedis(RedisConnection connection)
+						throws DataAccessException {
+					return connection.zRem(keyByte, objBytes);
+				}
+			});
+		}
+		return 0;
+	}
+
 	private RedisZSetCommands.Range conversionRange(Range range){
 		RedisZSetCommands.Range dataRange = RedisZSetCommands.Range.range();
 		if (range.getMin().getValue() != null) {

@@ -547,9 +547,48 @@ public class JedisClientImpl extends AbstractRedisClient {
 				jedis = this.jedisPool.getResource();
 				Map<byte[], Double> scoreMembers = new HashMap<byte[], Double>();
 				for (Tuple tuple : tuples) {
-					scoreMembers.put(this.serialization(tuple.getMember()), tuple.getScore());
+					scoreMembers.put(this.serialization(tuple.getMember()), tuple.getScore().doubleValue());
 				}
 				return jedis.zadd(this.serializationKey(key), scoreMembers);
+			} catch (JedisException e) {
+				this.jedisPool.returnBrokenResource(jedis);
+				throw e;
+			} finally {
+				this.jedisPool.returnResource(jedis);
+			}
+		}
+		return 0;
+	}
+	
+	@Override
+	public Double zscore(Serializable key, Serializable member) {
+		if (key != null && member != null) {
+			Jedis jedis = null;
+			try {
+				jedis = this.jedisPool.getResource();
+				return jedis.zscore(this.serializationKey(key), this.serialization(member));
+			} catch (JedisException e) {
+				this.jedisPool.returnBrokenResource(jedis);
+				throw e;
+			} finally {
+				this.jedisPool.returnResource(jedis);
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public long zrem(Serializable key, Serializable... members) {
+		members = this.conversionSerializableArray(members);
+		if (key != null && members != null && members.length > 0) {
+			Jedis jedis = null;
+			try {
+				jedis = this.jedisPool.getResource();
+				byte[][] objBytes = new byte[members.length][];
+				for (int i=0; i<members.length; i++) {
+					objBytes[i] = this.serialization(members[i]);
+				}
+				return jedis.zrem(this.serializationKey(key), objBytes);
 			} catch (JedisException e) {
 				this.jedisPool.returnBrokenResource(jedis);
 				throw e;

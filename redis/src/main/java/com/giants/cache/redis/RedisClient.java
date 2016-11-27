@@ -216,7 +216,23 @@ public interface RedisClient {
 	 * @param tuples 添加的有序集合元素
 	 * @return
 	 */
-	long zadd(Serializable key, Tuple... tuples);	
+	long zadd(Serializable key, Tuple... tuples);
+	
+	/**
+	 * 返回有序集 key 中，成员 member 的 score 值。
+	 * @param key 有序集合key
+	 * @param member 成员
+	 * @return 成员score 值
+	 */
+	Double zscore(Serializable key, Serializable member);
+	
+	/**
+	 * 移除有序集 key 中的一个或多个成员，不存在的成员将被忽略。
+	 * @param key 有序集合key
+	 * @param members 一个或多个 member 元素
+	 * @return 被成功移除的成员的数量，不包括被忽略的成员。
+	 */
+	long zrem(Serializable key, Serializable... members);
 	
 	/**
 	 * 返回有序集 key 中， score 值在 range 内的成员的数量。
@@ -308,15 +324,7 @@ public interface RedisClient {
 	
 	sdfsdf
 	long zinterstore(Serializable destKey, Aggregate aggregate, int[] weights, byte[]... sets);
-	
-	*//**
-	 * 返回有序集 key 中，成员 member 的 score 值。
-	 * @param key 有序集合key
-	 * @param member 成员
-	 * @return 成员score 值
-	 *//*
-	double zscore(Serializable key, Serializable member);	
-	
+		
 	*//**
 	 * 返回有序集 key 中，指定区间内的成员。
 	 * @param key 有序集合key
