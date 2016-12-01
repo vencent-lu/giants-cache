@@ -168,9 +168,15 @@ public class SpringDataRedisClient extends AbstractRedisClient {
 	}
 
 	@Override
-	public Set<byte[]> keys(byte[] pattern) {
+	public Set<byte[]> keys(final byte[] pattern) {
 		if (pattern != null) {
-			return this.redisTemplate.keys(pattern);
+			return this.redisTemplate.execute(new RedisCallback<Set<byte[]>>() {
+				@Override
+				public Set<byte[]> doInRedis(RedisConnection connection)
+						throws DataAccessException {
+					return connection.keys(pattern);
+				}
+			});
 		}
 		return null;
 	}
@@ -178,7 +184,14 @@ public class SpringDataRedisClient extends AbstractRedisClient {
 	@Override
 	public Set<String> keys(String pattern) {
 		if (pattern != null) {
-			Set<byte[]> keyByteSet = this.redisTemplate.keys(this.serializationKey(pattern));
+			final byte[] patternByte = this.serializationKey(pattern);
+			Set<byte[]> keyByteSet = this.redisTemplate.execute(new RedisCallback<Set<byte[]>>() {
+				@Override
+				public Set<byte[]> doInRedis(RedisConnection connection)
+						throws DataAccessException {
+					return connection.keys(patternByte);
+				}
+			});
 			if (CollectionUtils.isNotEmpty(keyByteSet)) {
 				Set<String> keyStringSet = new HashSet<String>();
 				for (byte[] byteKey : keyByteSet) {
@@ -568,18 +581,18 @@ public class SpringDataRedisClient extends AbstractRedisClient {
 
 	private RedisZSetCommands.Range conversionRange(Range range){
 		RedisZSetCommands.Range dataRange = RedisZSetCommands.Range.range();
-		if (range.getMin().getValue() != null) {
+		if (range.getMin()!=null && range.getMin().getValue() != null) {
 			if (range.getMin().isIncluding()) {
 				dataRange.gte(range.getMin().getValue());
 			} else {
 				dataRange.gt(range.getMin().getValue());
 			}
 		}
-		if (range.getMax().getValue() != null) {
+		if (range.getMax()!=null && range.getMax().getValue() != null) {
 			if (range.getMax().isIncluding()) {
-				dataRange.lte(range.getMax());
+				dataRange.lte(range.getMax().getValue());
 			} else {
-				dataRange.lt(range.getMax());
+				dataRange.lt(range.getMax().getValue());
 			}
 		}
 		return dataRange;
