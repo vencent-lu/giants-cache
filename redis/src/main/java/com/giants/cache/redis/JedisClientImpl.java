@@ -114,6 +114,25 @@ public class JedisClientImpl extends AbstractRedisClient {
 	}
 
 	@Override
+    public Serializable getSet(Serializable key, Serializable value) {
+	    if (key != null && value != null) {
+            Jedis jedis = null;
+            Serializable oldValue = null;
+            try{
+                jedis = this.jedisPool.getResource();
+                oldValue = this.deserialization(jedis.getSet(this.serializationKey(key), this.serialization(value)));
+            } catch (JedisException e) {
+                this.jedisPool.returnBrokenResource(jedis);
+                throw e;
+            } finally {
+                this.jedisPool.returnResource(jedis);
+            }
+            return oldValue;
+        }
+        return null;
+    }
+
+    @Override
 	public void expire(Serializable key, int seconds) {
 		if (key != null) {
 			Jedis jedis = null;
@@ -228,12 +247,12 @@ public class JedisClientImpl extends AbstractRedisClient {
 	}
 		
 	@Override
-	public void del(byte[] key) {
-		if (key != null) {
+	public void del(byte[]... keys) {
+		if (keys != null && keys.length > 0) {
 			Jedis jedis = null;
 			try {
 				jedis = this.jedisPool.getResource();
-				jedis.del(key);
+				jedis.del(keys);
 			} catch (JedisException e) {
 				this.jedisPool.returnBrokenResource(jedis);
 				throw e;

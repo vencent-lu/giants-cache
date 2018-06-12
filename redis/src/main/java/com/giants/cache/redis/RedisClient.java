@@ -63,6 +63,8 @@ public interface RedisClient {
 	@Deprecated
 	boolean setnx(Serializable key, Serializable value);
 	
+	Serializable getSet(Serializable key, Serializable value);
+	
 	/**
 	 * 为给定 key 设置生存时间，当 key 过期时(生存时间为 0 )，它会被自动删除。
 	 * @param key
@@ -107,9 +109,9 @@ public interface RedisClient {
 	
 	/**
 	 * 删除给定的key  字节数组
-	 * @param key
+	 * @param keys
 	 */
-	void del(byte[] key);
+	void del(byte[]... keys);
 	
 	/**
 	 * 返回哈希表 key 中，一个或多个给定域的值。
@@ -269,7 +271,20 @@ public interface RedisClient {
 	 */
 	Set<Serializable> zrevrangeByScore(Serializable key, Range range, int offset, int count);
 	
+	/**
+	 * 得到一个分布式锁
+	 * @param key 分布式锁Key
+	 * @param lockTimeOut 锁的过期时间
+	 * @return 返回布式锁过期时间戳
+	 */
+	Lock getLock(Serializable key, int lockTimeOut);
 	
+	/**
+	 * 释放分布式锁
+	 * @param lock
+	 * @param unReleaseExpireSends 过期时设置过期时间
+	 */
+	void releaseLock(Lock lock, int unReleaseExpireSends);
 	
 	
 	

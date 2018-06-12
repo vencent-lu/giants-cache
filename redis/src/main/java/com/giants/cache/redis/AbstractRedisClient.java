@@ -83,4 +83,34 @@ public abstract class AbstractRedisClient implements RedisClient {
 		}
 	}
 
+    @Override
+    public Lock getLock(Serializable key, int lockTimeOut) {
+        while(true) {
+            Long expireTime = System.currentTimeMillis() + lockTimeOut +1;
+            if (this.setnx(key, expireTime)) {
+                return new Lock(key, expireTime);
+            }
+            Long lockExpireTime =  (Long)this.get(key);
+            if (lockExpireTime == null) {
+                if (this.setnx(key, expireTime)) {
+                    return new Lock(key, expireTime);
+                }
+            } else if (System.currentTimeMillis() > lockExpireTime) {
+                lockExpireTime = (Long)this.getSet(key, expireTime);
+                if (lockExpireTime == null || System.currentTimeMillis() > lockExpireTime) {
+                    return new Lock(key, expireTime);
+                }
+            }
+        }        
+    }
+
+    @Override
+    public void releaseLock(Lock lock, int unReleaseExpireSends) {
+        if (System.currentTimeMillis() <= lock.getExpireTime()) {
+            this.del(lock.getKey());
+        } else {
+            this.expire(lock.getKey(), unReleaseExpireSends);
+        }
+    }
+
 }

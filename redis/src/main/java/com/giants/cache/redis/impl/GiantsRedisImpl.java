@@ -3,7 +3,6 @@
  */
 package com.giants.cache.redis.impl;
 
-import java.util.Iterator;
 import java.util.Set;
 
 import com.giants.cache.core.AbstractGinatsCache;
@@ -63,11 +62,8 @@ public class GiantsRedisImpl extends AbstractGinatsCache {
 			throws UndefinedCacheModelException {
 		CacheKey cacheKeySetKey = new CacheKey(cacheModelName, elementConfName);
 		Set<byte[]> cateKeyByteSet = this.redisClient.smembers(this.redisClient.serialization(cacheKeySetKey));
-		Iterator<byte[]> it = cateKeyByteSet.iterator();
-		while (it.hasNext()) {
-			this.redisClient.del(it.next());
-		}		
-		this.redisClient.del(new CacheKey(cacheModelName, elementConfName));
+		cateKeyByteSet.add(this.redisClient.serialization(cacheKeySetKey));
+		this.redisClient.del(cateKeyByteSet.toArray(new byte[][]{}));
 	}
 	
 	public void setRedisClient(RedisClient redisClient) {

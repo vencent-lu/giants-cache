@@ -118,6 +118,23 @@ public class SpringDataRedisClient extends AbstractRedisClient {
 	}
 
 	@Override
+    public Serializable getSet(Serializable key, Serializable value) {
+	    if (key != null && value != null) {
+            final byte[] keyByte = this.serializationKey(key);
+            final byte[] valueByte = this.serialization(value);
+            return this.deserialization(this.redisTemplate.execute(new RedisCallback<byte[]>() {
+
+                @Override
+                public byte[] doInRedis(RedisConnection connection)
+                        throws DataAccessException {
+                    return connection.getSet(keyByte, valueByte);
+                }
+            }));
+        }
+        return null;        
+    }
+
+    @Override
 	public void expire(Serializable key, final int seconds) {
 		if (key != null) {
 			final byte[] keyByte = this.serializationKey(key);
@@ -226,14 +243,14 @@ public class SpringDataRedisClient extends AbstractRedisClient {
 	}
 
 	@Override
-	public void del(final byte[] key) {
-		if (key != null) {
+	public void del(final byte[]... keys) {
+		if (keys != null && keys.length >0) {
 			this.redisTemplate.execute(new RedisCallback<Object>() {
 
 				@Override
 				public Object doInRedis(RedisConnection connection)
 						throws DataAccessException {
-					connection.del(key);
+					connection.del(keys);
 					return null;
 				}
 			});
