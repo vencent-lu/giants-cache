@@ -25,8 +25,8 @@ public class CacheKey implements Serializable {
 	}
 
 	/**
-	 * @param cacheModelName
-	 * @param keyName
+	 * @param cacheModelName cacheModelName
+	 * @param keyName keyName
 	 */
 	public CacheKey(String cacheModelName,String keyName) {
 		super();
@@ -36,9 +36,9 @@ public class CacheKey implements Serializable {
 	}
 
 	/**
-	 * @param cacheModelName
-	 * @param keyName
-	 * @param arguments
+	 * @param cacheModelName cacheModelName
+	 * @param keyName keyName
+	 * @param arguments arguments
 	 */
 	public CacheKey(String cacheModelName,String keyName, List<Object> arguments) {
 		super();
@@ -49,9 +49,9 @@ public class CacheKey implements Serializable {
 	}
 	
 	/**
-	 * @param cacheModelName
-	 * @param keyName
-	 * @param arguments
+	 * @param cacheModelName cacheModelName
+	 * @param keyName keyName
+	 * @param arguments arguments
 	 */
 	public CacheKey(String cacheModelName,String keyName, Object... arguments) {
 		super();

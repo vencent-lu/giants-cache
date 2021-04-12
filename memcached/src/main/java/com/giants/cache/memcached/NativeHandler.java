@@ -86,7 +86,7 @@ import org.slf4j.LoggerFactory;
  * http://java.sun.com/docs/books/tutorial/native1.1/integrating/types.html
  *
  * @author <a href="mailto:burton@peerfear.org">Kevin A. Burton</a>
- * @author Greg Whalin <greg@meetup.com> 
+ * @author Greg Whalin
  */
 public class NativeHandler {
 
@@ -309,10 +309,10 @@ public class NativeHandler {
 	/** 
 	 * Decodes byte array using memcache flag to determine type.
 	 * 
-	 * @param b 
-	 * @param marker 
-	 * @return 
-	 * @throws Exception 
+	 * @param b b
+	 * @param flag flag
+	 * @return object
+	 * @throws Exception Exception
 	 */
 	public static Object decode( byte[] b, int flag ) throws Exception {
 
@@ -422,8 +422,8 @@ public class NativeHandler {
 	 * This works by taking each of the bit patterns and converting them to
 	 * ints taking into account 2s complement and then adding them..
 	 * 
-	 * @param b 
-	 * @return 
+	 * @param b b
+	 * @return int
 	 */
 	protected static int toInt( byte[] b ) {
 		return (((((int) b[3]) & 0xFF) << 32) +

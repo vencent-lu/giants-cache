@@ -24,8 +24,8 @@ public class ServletCacheKey extends CacheKey {
 	}
 
 	/**
-	 * @param cacheModelName
-	 * @param keyName
+	 * @param cacheModelName cacheModelName
+	 * @param keyName keyName
 	 */
 	public ServletCacheKey(String cacheModelName, String keyName) {
 		super(cacheModelName, keyName);
@@ -33,9 +33,9 @@ public class ServletCacheKey extends CacheKey {
 	}
 
 	/**
-	 * @param cacheModelName
-	 * @param keyName
-	 * @param arguments
+	 * @param cacheModelName cacheModelName
+	 * @param keyName keyName
+	 * @param arguments arguments
 	 */
 	public ServletCacheKey(String cacheModelName, String keyName,
 			List<Object> arguments) {

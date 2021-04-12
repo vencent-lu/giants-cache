@@ -37,8 +37,8 @@ public class Range {
 	/**
 	 * Greater Than Equals
 	 * 
-	 * @param min
-	 * @return
+	 * @param min min
+	 * @return Range
 	 */
 	public Range gte(Object min) {
 		this.min = new Boundary(min, true);
@@ -48,8 +48,8 @@ public class Range {
 	/**
 	 * Greater Than
 	 * 
-	 * @param min
-	 * @return
+	 * @param min min
+	 * @return Range
 	 */
 	public Range gt(Object min) {
 		this.min = new Boundary(min, false);
@@ -59,8 +59,8 @@ public class Range {
 	/**
 	 * Less Then Equals
 	 * 
-	 * @param max
-	 * @return
+	 * @param max max
+	 * @return Range
 	 */
 	public Range lte(Object max) {
 		Assert.notNull(max, "Max already set for range.");
@@ -71,8 +71,8 @@ public class Range {
 	/**
 	 * Less Than
 	 * 
-	 * @param max
-	 * @return
+	 * @param max max
+	 * @return Range
 	 */
 	public Range lt(Object max) {
 		Assert.notNull(max, "Max already set for range.");

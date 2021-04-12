@@ -25,8 +25,8 @@ public class MethodCacheKey extends CacheKey {
 	}
 
 	/**
-	 * @param cacheModelName
-	 * @param keyName
+	 * @param cacheModelName cacheModelName
+	 * @param keyName keyName
 	 */
 	public MethodCacheKey(String cacheModelName,String keyName) {
 		super(cacheModelName,keyName);
@@ -34,9 +34,9 @@ public class MethodCacheKey extends CacheKey {
 	}
 
 	/**
-	 * @param cacheModelName
-	 * @param keyName
-	 * @param arguments
+	 * @param cacheModelName cacheModelName
+	 * @param keyName keyName
+	 * @param arguments arguments
 	 */
 	public MethodCacheKey(String cacheModelName, String keyName, List<Object> arguments) {
 		super(cacheModelName, keyName, arguments);

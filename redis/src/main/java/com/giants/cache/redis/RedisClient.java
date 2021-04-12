@@ -17,21 +17,21 @@ public interface RedisClient {
 	
 	/**
 	 * 返回key对应的值
-	 * @param key 
+	 * @param key key
 	 * @return key对应的值
 	 */
 	Serializable get(Serializable key);
 	
 	/**
 	 * 设置key对应的值
-	 * @param key
+	 * @param key key
 	 * @param value 值
 	 */
 	void set(Serializable key, Serializable value);
 	
 	/**
 	 * 设置key对应的值
-	 * @param key
+	 * @param key key
 	 * @param value 值
 	 * @param option SET_IF_ABSENT | SET_IF_PRESENT,SET_IF_ABSENT -如果不存在则设置。SET_IF_PRESENT,如果存在则设置。
 	 * @param expirationUnit SECONDS|MILLISECONDS, 过期时间单位: SECONDS = seconds; MILLISECONDS = milliseconds
@@ -43,7 +43,7 @@ public interface RedisClient {
 	
 	/**
 	 * 设置key对应的值
-	 * @param key
+	 * @param key key
 	 * @param value 值
 	 * @param option SET_IF_ABSENT | SET_IF_PRESENT,SET_IF_ABSENT -如果不存在则设置。SET_IF_PRESENT,如果存在则设置。
 	 * @param expirationUnit SECONDS|MILLISECONDS, 过期时间单位: SECONDS = seconds; MILLISECONDS = milliseconds
@@ -56,7 +56,7 @@ public interface RedisClient {
 	/**
 	 * 设置key对应的值 如果不存在，则 SET
 	 * 不建议使用，如果需要同时设置过期时间不能保证原子性
-	 * @param key
+	 * @param key key
 	 * @param value
 	 * @return
 	 */
@@ -67,21 +67,21 @@ public interface RedisClient {
 	
 	/**
 	 * 为给定 key 设置生存时间，当 key 过期时(生存时间为 0 )，它会被自动删除。
-	 * @param key
+	 * @param key key
 	 * @param seconds 生存时间
 	 */
 	void expire(Serializable key, int seconds);
 	
 	/**
 	 * 以毫秒为单位返回 key 的剩余生存时间
-	 * @param key
+	 * @param key key
 	 * @return 生存时间
 	 */
 	long pttl(Serializable key);
 	
 	/**
 	 * 设置key对应的值,同时指定key生存时间
-	 * @param key
+	 * @param key key
 	 * @param value 值
 	 * @param seconds 生存时间
 	 */
@@ -103,13 +103,13 @@ public interface RedisClient {
 	
 	/**
 	 * 删除给定的一个或多个 key 
-	 * @param keys
+	 * @param keys keys
 	 */
 	void del(Serializable... keys);
 	
 	/**
 	 * 删除给定的key  字节数组
-	 * @param keys
+	 * @param keys keys
 	 */
 	void del(byte[]... keys);
 	
@@ -117,7 +117,7 @@ public interface RedisClient {
 	 * 返回哈希表 key 中，一个或多个给定域的值。
 	 * @param key 哈希表 key
 	 * @param fields 一个或多个域
-	 * @return
+	 * @return List
 	 */
 	List<Serializable> hmget(Serializable key, Serializable... fields);
 	
@@ -125,7 +125,7 @@ public interface RedisClient {
 	 * 返回哈希表 key 中，给定域的值。
 	 * @param key 哈希表 key
 	 * @param field 域
-	 * @return
+	 * @return Serializable
 	 */
 	Serializable hmget(Serializable key, Serializable field);
 	
@@ -156,7 +156,7 @@ public interface RedisClient {
 	/**
 	 * 返回哈希表 key 中的所有域。
 	 * @param key 哈希表 key
-	 * @return
+	 * @return Set
 	 */
 	Set<Serializable> hkeys(Serializable key);
 	
@@ -186,7 +186,7 @@ public interface RedisClient {
 	 * 判断 member 元素是否集合 key 的成员。
 	 * @param key 集合Key
 	 * @param member 元素
-	 * @return
+	 * @return boolean
 	 */
 	boolean sismember(Serializable key, Serializable member);
 	
@@ -216,7 +216,7 @@ public interface RedisClient {
 	 * 将一个或多个 Tuple(member 元素及其 score 值)加入到有序集 key 当中。
 	 * @param key 有序集合key
 	 * @param tuples 添加的有序集合元素
-	 * @return
+	 * @return long
 	 */
 	long zadd(Serializable key, Tuple... tuples);
 	
@@ -406,15 +406,13 @@ public interface RedisClient {
 		/**
 		 * 如果不存在则设置
 		 * {@code NX}
-		 * 
-		 * @return
+		 *
 		 */
 		SET_IF_ABSENT("NX"),
 		/**
 		 * 如果存在则设置
 		 * {@code XX}
-		 * 
-		 * @return
+		 *
 		 */
 		SET_IF_PRESENT("XX");
 		

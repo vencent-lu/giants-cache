@@ -26,7 +26,7 @@ public class PurgeIP implements Serializable {
 	}
 
 	/**
-	 * @param value
+	 * @param value value
 	 */
 	public PurgeIP(String value) {
 		this.value = value;

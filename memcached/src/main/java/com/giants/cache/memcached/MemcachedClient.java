@@ -35,17 +35,17 @@ import com.caucho.hessian.io.SerializerFactory;
 /**
  * This is a Memcached client for the Java platform available from
  *  <a href="http:/www.danga.com/memcached/">http://www.danga.com/memcached/</a>.
- * <br/> 
- * Supports setting, adding, replacing, deleting compressed/uncompressed and<br/>
- * serialized (can be stored as string if object is native class) objects to memcached.<br/>
- * <br/>
- * Now pulls SockIO objects from SockIOPool, which is a connection pool.  The server failover<br/>
- * has also been moved into the SockIOPool class.<br/>
- * This pool needs to be initialized prior to the client working.  See javadocs from SockIOPool.<br/>
- * <br/>
- * Some examples of use follow.<br/>
- * <h3>To create cache client object and set params:</h3>
- * <pre> 
+ *  
+ * Supports setting, adding, replacing, deleting compressed/uncompressed and
+ * serialized (can be stored as string if object is native class) objects to memcached.
+ * 
+ * Now pulls SockIO objects from SockIOPool, which is a connection pool.  The server failover
+ * has also been moved into the SockIOPool class.
+ * This pool needs to be initialized prior to the client working.  See javadocs from SockIOPool.
+ * 
+ * Some examples of use follow.
+ * To create cache client object and set params:
+ *  
  *	MemcachedClient mc = new MemcachedClient();
  *
  *	// compression is enabled by default	
@@ -57,43 +57,41 @@ import com.caucho.hessian.io.SerializerFactory;
  *	// turn on storing primitive types as a string representation
  *	// Should not do this in most cases.	
  *	mc.setPrimitiveAsString(true);
- * </pre>	
- * <h3>To store an object:</h3>
- * <pre>
+ * 	
+ * To store an object:
+ * 
  *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "cacheKey1";	
  *	Object value = SomeClass.getObject();	
  *	mc.set(key, value);
- * </pre> 
- * <h3>To store an object using a custom server hashCode:</h3>
- * <pre>
+ *  
+ * To store an object using a custom server hashCode:
+ * 
  *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "cacheKey1";	
  *	Object value = SomeClass.getObject();	
  *	Integer hash = new Integer(45);	
  *	mc.set(key, value, hash);
- * </pre> 
- * The set method shown above will always set the object in the cache.<br/>
- * The add and replace methods do the same, but with a slight difference.<br/>
- * <ul>
- * 	<li>add -- will store the object only if the server does not have an entry for this key</li>
- * 	<li>replace -- will store the object only if the server already has an entry for this key</li>
- * </ul> 
- * <h3>To delete a cache entry:</h3>
- * <pre>
+ *
+ * The set method shown above will always set the object in the cache.
+ * The add and replace methods do the same, but with a slight difference.
+ * 	add -- will store the object only if the server does not have an entry for this key
+ * 	replace -- will store the object only if the server already has an entry for this key
+ * To delete a cache entry:
+ * 
  *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "cacheKey1";	
  *	mc.delete(key);
- * </pre> 
- * <h3>To delete a cache entry using a custom hash code:</h3>
- * <pre>
+ *  
+ * To delete a cache entry using a custom hash code:
+ * 
  *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "cacheKey1";	
  *	Integer hash = new Integer(45);	
  *	mc.delete(key, hashCode);
- * </pre> 
- * <h3>To store a counter and then increment or decrement that counter:</h3>
- * <pre>
+ *  
+ * To store a counter and then increment or decrement that counter:
+ * 
  *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "counterKey";	
  *	mc.storeCounter(key, new Integer(100));
@@ -101,9 +99,9 @@ import com.caucho.hessian.io.SerializerFactory;
  *	System.out.println("counter after adding      5: " mc.incr(key, 5));	
  *	System.out.println("counter after subtracting 4: " mc.decr(key, 4));	
  *	System.out.println("counter after subtracting 1: " mc.decr(key));	
- * </pre> 
- * <h3>To store a counter and then increment or decrement that counter with custom hash:</h3>
- * <pre>
+ *  
+ * To store a counter and then increment or decrement that counter with custom hash:
+ * 
  *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "counterKey";	
  *	Integer hash = new Integer(45);	
@@ -112,49 +110,49 @@ import com.caucho.hessian.io.SerializerFactory;
  *	System.out.println("counter after adding      5: " mc.incr(key, 5, hash));	
  *	System.out.println("counter after subtracting 4: " mc.decr(key, 4, hash));	
  *	System.out.println("counter after subtracting 1: " mc.decr(key, 1, hash));	
- * </pre> 
- * <h3>To retrieve an object from the cache:</h3>
- * <pre>
+ *  
+ * To retrieve an object from the cache:
+ * 
  *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "key";	
  *	Object value = mc.get(key);	
- * </pre> 
- * <h3>To retrieve an object from the cache with custom hash:</h3>
- * <pre>
+ *  
+ * To retrieve an object from the cache with custom hash:
+ * 
  *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "key";	
  *	Integer hash = new Integer(45);	
  *	Object value = mc.get(key, hash);	
- * </pre> 
- * <h3>To retrieve an multiple objects from the cache</h3>
- * <pre>
+ *  
+ * To retrieve an multiple objects from the cache
+ * 
  *	MemcachedClient mc = new MemcachedClient();
  *	String[] keys      = { "key", "key1", "key2" };
  *	Map&lt;Object&gt; values = mc.getMulti(keys);
- * </pre> 
- * <h3>To retrieve an multiple objects from the cache with custom hashing</h3>
- * <pre>
+ *  
+ * To retrieve an multiple objects from the cache with custom hashing
+ * 
  *	MemcachedClient mc = new MemcachedClient();
  *	String[] keys      = { "key", "key1", "key2" };
  *	Integer[] hashes   = { new Integer(45), new Integer(32), new Integer(44) };
  *	Map&lt;Object&gt; values = mc.getMulti(keys, hashes);
- * </pre> 
- * <h3>To flush all items in server(s)</h3>
- * <pre>
+ *  
+ * To flush all items in server(s)
+ * 
  *	MemcachedClient mc = new MemcachedClient();
  *	mc.flushAll();
- * </pre> 
- * <h3>To get stats from server(s)</h3>
- * <pre>
+ *  
+ * To get stats from server(s)
+ * 
  *	MemcachedClient mc = new MemcachedClient();
  *	Map stats = mc.stats();
- * </pre> 
+ *  
  *
- * @author greg whalin <greg@meetup.com> 
- * @author Richard 'toast' Russo <russor@msoe.edu>
- * @author Kevin Burton <burton@peerfear.org>
- * @author Robert Watts <robert@wattsit.co.uk>
- * @author Vin Chawla <vin@tivo.com>
+ * @author greg whalin
+ * @author Richard 'toast' Russo
+ * @author Kevin Burton
+ * @author Robert Watts
+ * @author Vin Chawla
  * @version 1.5
  */
 public class MemcachedClient {
@@ -303,7 +301,7 @@ public class MemcachedClient {
 	 * Sets an optional ClassLoader to be used for
 	 * serialization.
 	 * 
-	 * @param classLoader 
+	 * @param classLoader classLoader
 	 */
 	public void setClassLoader( ClassLoader classLoader ) {
 		this.classLoader = classLoader;
@@ -312,7 +310,7 @@ public class MemcachedClient {
 	/** 
 	 * Sets an optional ErrorHandler.
 	 * 
-	 * @param errorHandler 
+	 * @param errorHandler errorHandler
 	 */
 	public void setErrorHandler( ErrorHandler errorHandler ) {
 		this.errorHandler = errorHandler;
@@ -340,7 +338,7 @@ public class MemcachedClient {
 	 * Sets default String encoding when storing primitives as Strings. 
 	 * Default is UTF-8.
 	 * 
-	 * @param defaultEncoding 
+	 * @param defaultEncoding  defaultEncoding
 	 */
 	public void setDefaultEncoding( String defaultEncoding ) {
 		this.defaultEncoding = defaultEncoding;
@@ -349,12 +347,12 @@ public class MemcachedClient {
 	/**
 	 * Enable storing compressed data, provided it meets the threshold requirements.
 	 *
-	 * If enabled, data will be stored in compressed form if it is<br/>
-	 * longer than the threshold length set with setCompressThreshold(int)<br/>
-	 *<br/>
-	 * The default is that compression is enabled.<br/>
-	 *<br/>
-	 * Even if compression is disabled, compressed data will be automatically<br/>
+	 * If enabled, data will be stored in compressed form if it is
+	 * longer than the threshold length set with setCompressThreshold(int)
+	 *
+	 * The default is that compression is enabled.
+	 *
+	 * Even if compression is disabled, compressed data will be automatically
 	 * decompressed.
 	 *
 	 * @param compressEnable <CODE>true</CODE> to enable compression, <CODE>false</CODE> to disable compression
@@ -411,10 +409,10 @@ public class MemcachedClient {
 	/**
 	 * Deletes an object from cache given cache key, a delete time, and an optional hashcode.
 	 *
-	 *  The item is immediately made non retrievable.<br/>
-	 *  Keep in mind {@link #add(String, Object) add} and {@link #replace(String, Object) replace}<br/>
-	 *  will fail when used with the same key will fail, until the server reaches the<br/>
-	 *  specified time. However, {@link #set(String, Object) set} will succeed,<br/>
+	 *  The item is immediately made non retrievable.
+	 *  Keep in mind {@link #add(String, Object) add} and {@link #replace(String, Object) replace}
+	 *  will fail when used with the same key will fail, until the server reaches the
+	 *  specified time. However, {@link #set(String, Object) set} will succeed,
 	 *  and the new value will not be deleted.
 	 *
 	 * @param key the key to be removed
@@ -658,13 +656,13 @@ public class MemcachedClient {
 	/** 
 	 * Stores data to cache.
 	 *
-	 * If data does not already exist for this key on the server, or if the key is being<br/>
-	 * deleted, the specified value will not be stored.<br/>
-	 * The server will automatically delete the value when the expiration time has been reached.<br/>
-	 * <br/>
-	 * If compression is enabled, and the data is longer than the compression threshold<br/>
-	 * the data will be stored in compressed form.<br/>
-	 * <br/>
+	 * If data does not already exist for this key on the server, or if the key is being
+	 * deleted, the specified value will not be stored.
+	 * The server will automatically delete the value when the expiration time has been reached.
+	 * 
+	 * If compression is enabled, and the data is longer than the compression threshold
+	 * the data will be stored in compressed form.
+	 * 
 	 * As of the current release, all objects stored will use java serialization.
 	 * 
 	 * @param cmdname action to take (set, add, replace)
@@ -882,9 +880,9 @@ public class MemcachedClient {
 	
 	/**
 	 * hessian序列化方法
-	 * @param os
-	 * @param object
-	 * @throws IOException
+	 * @param os os
+	 * @param object object
+	 * @throws IOException IOException
 	 * @author vencent.lu
 	 */
 	private void serializeByHessian(OutputStream os, Object object) throws IOException {
@@ -1119,10 +1117,10 @@ public class MemcachedClient {
 	/** 
 	 * Increments/decrements the value at the specified key by inc.
 	 * 
-	 *  Note that the server uses a 32-bit unsigned integer, and checks for<br/>
-	 *  underflow. In the event of underflow, the result will be zero.  Because<br/>
-	 *  Java lacks unsigned types, the value is returned as a 64-bit integer.<br/>
-	 *  The server will only decrement a value if it already exists;<br/>
+	 *  Note that the server uses a 32-bit unsigned integer, and checks for
+	 *  underflow. In the event of underflow, the result will be zero.  Because
+	 *  Java lacks unsigned types, the value is returned as a 64-bit integer.
+	 *  The server will only decrement a value if it already exists;
 	 *  if a value is not found, -1 will be returned.
 	 *
 	 * @param cmdname increment/decrement
@@ -1227,11 +1225,11 @@ public class MemcachedClient {
 	/**
 	 * Retrieve a key from the server, using a specific hash.
 	 *
-	 *  If the data was compressed or serialized when compressed, it will automatically<br/>
-	 *  be decompressed or serialized, as appropriate. (Inclusive or)<br/>
-	 *<br/>
-	 *  Non-serialized data will be returned as a string, so explicit conversion to<br/>
-	 *  numeric types will be necessary, if desired<br/>
+	 *  If the data was compressed or serialized when compressed, it will automatically
+	 *  be decompressed or serialized, as appropriate. (Inclusive or)
+	 *
+	 *  Non-serialized data will be returned as a string, so explicit conversion to
+	 *  numeric types will be necessary, if desired
 	 *
 	 * @param key key where data is stored
 	 * @return the object that was previously stored, or null if it was not previously stored
@@ -1243,11 +1241,11 @@ public class MemcachedClient {
 	/** 
 	 * Retrieve a key from the server, using a specific hash.
 	 *
-	 *  If the data was compressed or serialized when compressed, it will automatically<br/>
-	 *  be decompressed or serialized, as appropriate. (Inclusive or)<br/>
-	 *<br/>
-	 *  Non-serialized data will be returned as a string, so explicit conversion to<br/>
-	 *  numeric types will be necessary, if desired<br/>
+	 *  If the data was compressed or serialized when compressed, it will automatically
+	 *  be decompressed or serialized, as appropriate. (Inclusive or)
+	 *
+	 *  Non-serialized data will be returned as a string, so explicit conversion to
+	 *  numeric types will be necessary, if desired
 	 *
 	 * @param key key where data is stored
 	 * @param hashCode if not null, then the int hashcode to use
@@ -1260,11 +1258,11 @@ public class MemcachedClient {
 	/**
 	 * Retrieve a key from the server, using a specific hash.
 	 *
-	 *  If the data was compressed or serialized when compressed, it will automatically<br/>
-	 *  be decompressed or serialized, as appropriate. (Inclusive or)<br/>
-	 *<br/>
-	 *  Non-serialized data will be returned as a string, so explicit conversion to<br/>
-	 *  numeric types will be necessary, if desired<br/>
+	 *  If the data was compressed or serialized when compressed, it will automatically
+	 *  be decompressed or serialized, as appropriate. (Inclusive or)
+	 *
+	 *  Non-serialized data will be returned as a string, so explicit conversion to
+	 *  numeric types will be necessary, if desired
 	 *
 	 * @param key key where data is stored
 	 * @param hashCode if not null, then the int hashcode to use
@@ -1446,8 +1444,8 @@ public class MemcachedClient {
 	/** 
 	 * Retrieve multiple objects from the memcache.
 	 *
-	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it<br/>
-	 *  is more efficient.<br/>
+	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it
+	 *  is more efficient.
 	 *
 	 * @param keys String array of keys to retrieve
 	 * @return Object array ordered in same order as key array containing results
@@ -1459,8 +1457,8 @@ public class MemcachedClient {
 	/** 
 	 * Retrieve multiple objects from the memcache.
 	 *
-	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it<br/>
-	 *  is more efficient.<br/>
+	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it
+	 *  is more efficient.
 	 *
 	 * @param keys String array of keys to retrieve
 	 * @param hashCodes if not null, then the Integer array of hashCodes
@@ -1473,8 +1471,8 @@ public class MemcachedClient {
 	/** 
 	 * Retrieve multiple objects from the memcache.
 	 *
-	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it<br/>
-	 *  is more efficient.<br/>
+	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it
+	 *  is more efficient.
 	 *
 	 * @param keys String array of keys to retrieve
 	 * @param hashCodes if not null, then the Integer array of hashCodes
@@ -1499,8 +1497,8 @@ public class MemcachedClient {
 	/**
 	 * Retrieve multiple objects from the memcache.
 	 *
-	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it<br/>
-	 *  is more efficient.<br/>
+	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it
+	 *  is more efficient.
 	 *
 	 * @param keys String array of keys to retrieve
 	 * @return a hashmap with entries for each key is found by the server,
@@ -1514,8 +1512,8 @@ public class MemcachedClient {
 	/**
 	 * Retrieve multiple keys from the memcache.
 	 *
-	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it<br/>
-	 *  is more efficient.<br/>
+	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it
+	 *  is more efficient.
 	 *
 	 * @param keys keys to retrieve
 	 * @param hashCodes if not null, then the Integer array of hashCodes
@@ -1530,8 +1528,8 @@ public class MemcachedClient {
 	/**
 	 * Retrieve multiple keys from the memcache.
 	 *
-	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it<br/>
-	 *  is more efficient.<br/>
+	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it
+	 *  is more efficient.
 	 *
 	 * @param keys keys to retrieve
 	 * @param hashCodes if not null, then the Integer array of hashCodes
@@ -1640,7 +1638,7 @@ public class MemcachedClient {
 	/** 
 	 * This method loads the data from cache into a Map.
 	 *
-	 * Pass a SockIO object which is ready to receive data and a HashMap<br/>
+	 * Pass a SockIO object which is ready to receive data and a HashMap
 	 * to store the results.
 	 * 
 	 * @param sock socket waiting to pass back data
@@ -1962,6 +1960,7 @@ public class MemcachedClient {
 	 * with the cachekey as key and byte size and unix timestamp as value.
 	 * 
 	 * @param slabNumber the item number of the cache dump
+	 * @param limit  limit
 	 * @return Stats map
 	 */
 	public Map statsCacheDump( int slabNumber, int limit ) {
@@ -1977,6 +1976,7 @@ public class MemcachedClient {
 	 * 
 	 * @param servers string array of servers to retrieve stats from, or all if this is null
 	 * @param slabNumber the item number of the cache dump
+	 * @param limit  limit
 	 * @return Stats map
 	 */
 	public Map statsCacheDump( String[] servers, int slabNumber, int limit ) {

@@ -38,8 +38,8 @@ public class ResponseWrapper extends HttpServletResponseWrapper
     private PrintWriter writer;
 
 	/**
-	 * @param response
-	 * @param stream
+	 * @param response response
+	 * @param stream stream
 	 */
 	public ResponseWrapper(HttpServletResponse response, OutputStream stream) {
 		super(response);
@@ -79,7 +79,7 @@ public class ResponseWrapper extends HttpServletResponseWrapper
      *
      * @param i      the status code
      * @param string the error message
-     * @throws IOException
+     * @throws IOException IOException
      */
     public void sendError(int i, String string) throws IOException {
         statusCode = i;
@@ -91,7 +91,7 @@ public class ResponseWrapper extends HttpServletResponseWrapper
      * Also, the content is not cached.
      *
      * @param i the status code
-     * @throws IOException
+     * @throws IOException IOException
      */
     public void sendError(int i) throws IOException {
         statusCode = i;
@@ -103,7 +103,7 @@ public class ResponseWrapper extends HttpServletResponseWrapper
      * Also, the content is not cached.
      *
      * @param string the URL to redirect to
-     * @throws IOException
+     * @throws IOException IOException
      */
     public void sendRedirect(String string) throws IOException {
         statusCode = HttpServletResponse.SC_MOVED_TEMPORARILY;
@@ -135,6 +135,7 @@ public class ResponseWrapper extends HttpServletResponseWrapper
 
     /**
      * Gets all the cookies.
+     * @return List cookies
      */
     public List<Cookie> getCookies() {
         return cookies;
@@ -261,6 +262,7 @@ public class ResponseWrapper extends HttpServletResponseWrapper
 
 	/**
      * Flushes all the streams for this response.
+     * @throws IOException IOException
      */
     public void flush() throws IOException {
         if (this.writer != null) {

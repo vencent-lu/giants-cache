@@ -26,7 +26,10 @@ public class SerializableCookie implements Serializable {
     private boolean secure;
     private int version;
 
-    /** Creates a cookie. */
+    /**
+     * Creates a cookie.
+     * @param cookie cookie
+     */
     public SerializableCookie(final Cookie cookie) {
         name = cookie.getName();
         value = cookie.getValue();
@@ -38,7 +41,10 @@ public class SerializableCookie implements Serializable {
         version = cookie.getVersion();
     }
 
-    /** Builds a Cookie object from this object. */
+    /**
+     * Builds a Cookie object from this object.
+     * @return Cookie
+     */
     public Cookie toCookie() {
         final Cookie cookie = new Cookie(name, value);
         cookie.setComment(comment);

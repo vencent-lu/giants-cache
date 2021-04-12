@@ -15,10 +15,6 @@ public class UndefinedCacheModelException extends Exception {
 	
 	private String cacheModelName;
 
-
-	/**
-	 * @param arg0
-	 */
 	public UndefinedCacheModelException(String cacheModelName) {
 		super(MessageFormat.format("caching module \"{0}\" undefined!", cacheModelName));
 		this.cacheModelName = cacheModelName;

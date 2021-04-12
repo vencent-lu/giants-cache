@@ -15,11 +15,7 @@ public class User implements Serializable {
 	
 	private String name;
 	private Integer age;	
-	
-	/**
-	 * @param name
-	 * @param age
-	 */
+
 	public User(String name, Integer age) {
 		super();
 		this.name = name;

@@ -26,17 +26,20 @@ public interface LineInputStream {
 	 * not include the end of line, though it is consumed
 	 * from the input.
 	 * @return  All next up to the next end of line.
+	 * @throws IOException IOException
 	 */
 	public String readLine() throws IOException;
 	
 	/**
 	 * Read everything up to and including the end of line.
+	 * @throws IOException IOException
 	 */
 	public void clearEOL() throws IOException;
 	
 	/**
 	 * Read some bytes.
-	 * @param buf   The buffer into which read. 
+	 * @param buf   The buffer into which read.
+	 * @throws IOException IOException
 	 * @return      The number of bytes actually read, or -1 if none could be read.
 	 */
 	public int read( byte[] buf ) throws IOException;

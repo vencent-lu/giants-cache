@@ -24,13 +24,15 @@ public class ServletResultInfo implements Serializable {
 	private String contentType;
     private byte[] responseBody;
     private int statusCode;
-    
-	/**
-	 * @param contentType
-	 * @param responseBody
-	 * @param statusCode
-	 * @param httpDateFormatter
-	 */
+
+    /**
+     *
+     * @param statusCode statusCode
+     * @param contentType contentType
+     * @param cookies cookies
+     * @param responseBody responseBody
+     * @param headers headers
+     */
 	public ServletResultInfo(final int statusCode, final String contentType,
 			final List<Cookie> cookies,
 			final byte[] responseBody,
@@ -79,14 +81,14 @@ public class ServletResultInfo implements Serializable {
     }
     
     /**
-     * Returns the cookies of the response.
+     * @return the cookies of the response.
      */
     public List<SerializableCookie> getSerializableCookies() {
         return this.serializableCookies;
     }
     
     /**
-     * Returns the status code of the response.
+     * @return the status code of the response.
      */
     public int getStatusCode() {
         return this.statusCode;

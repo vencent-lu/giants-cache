@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * RFC 2616 - HTTP/1.1 Protocol
- * <p/>
  * Section 3.3.1 defines the preferred full date and time as:
  * <pre>
  * HTTP-date    = rfc1123-date
@@ -29,11 +28,8 @@ import org.slf4j.LoggerFactory;
  * | "May" | "Jun" | "Jul" | "Aug"
  * | "Sep" | "Oct" | "Nov" | "Dec"
  * </pre>
- * <p/>
  * An example is <code>Sun, 06 Nov 1994 08:49:37 GMT</code>
- * <p/>
  * These are used in request and response headers.
- * <p/>
  * @author vencent.lu
  */
 public class HttpDateFormatter {
@@ -46,7 +42,6 @@ public class HttpDateFormatter {
 
     /**
      * Constructs a new formatter.
-     * <p/>
      * Note that this class is not thread-safe for use by multiple threads, as SimpleDateFormat is not.
      * Each thread should create their own instance of this class.
      */
@@ -58,7 +53,7 @@ public class HttpDateFormatter {
 
     /**
      *
-     * @param date
+     * @param date date
      * @return A date formatted in accordance with Section 3.3.1 of RFC 2616
      */
     public synchronized String formatHttpDate(Date date) {

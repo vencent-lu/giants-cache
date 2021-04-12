@@ -49,8 +49,8 @@ public class CacheElement implements Serializable {
 	}
 
 	/**
-	 * @param name
-	 * @param timeToLive
+	 * @param name name
+	 * @param timeToLive timeToLive
 	 */
 	public CacheElement(String name, Long timeToLive) {
 		super();

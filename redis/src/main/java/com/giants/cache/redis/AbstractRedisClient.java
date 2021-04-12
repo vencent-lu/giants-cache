@@ -24,7 +24,7 @@ public abstract class AbstractRedisClient implements RedisClient {
 	/**
 	 * List转数组后，类型不确定的情况下，需要对数据的每个元素做强转
 	 * 如 List.toArray() 方法得到 Object[] 不能确定是否能转成Serializable[]
-	 * @param serializables
+	 * @param serializables serializables
 	 * @return
 	 */
 	protected Serializable[] conversionSerializableArray(

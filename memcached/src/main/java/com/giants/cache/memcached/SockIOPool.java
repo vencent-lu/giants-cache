@@ -45,12 +45,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** 
- * This class is a connection pool for maintaning a pool of persistent connections<br/>
+ * This class is a connection pool for maintaning a pool of persistent connections
  * to memcached servers.
  *
- * The pool must be initialized prior to use. This should typically be early on<br/>
- * in the lifecycle of the JVM instance.<br/>
- * <br/>
+ * The pool must be initialized prior to use. This should typically be early on
+ * in the lifecycle of the JVM instance.
+ * 
  * <h3>An example of initializing using defaults:</h3>
  * <pre>
  *
@@ -107,9 +107,9 @@ import org.slf4j.LoggerFactory;
  *		pool.initialize();	
  *	}
  *  </pre> 
- * The easiest manner in which to initialize the pool is to set the servers and rely on defaults as in the first example.<br/> 
- * After pool is initialized, a client will request a SockIO object by calling getSock with the cache key<br/>
- * The client must always close the SockIO object when finished, which will return the connection back to the pool.<br/> 
+ * The easiest manner in which to initialize the pool is to set the servers and rely on defaults as in the first example. 
+ * After pool is initialized, a client will request a SockIO object by calling getSock with the cache key
+ * The client must always close the SockIO object when finished, which will return the connection back to the pool. 
  * <h3>An example of retrieving a SockIO object:</h3>
  * <pre>
  *		SockIOPool.SockIO sock = SockIOPool.getInstance().getSock( key );
@@ -123,7 +123,7 @@ import org.slf4j.LoggerFactory;
  *		sock.close();	
  * </pre> 
  *
- * @author greg whalin <greg@whalin.com> 
+ * @author greg whalin
  * @version 1.5
  */
 public class SockIOPool {
@@ -248,7 +248,7 @@ public class SockIOPool {
 	/** 
 	 * Sets the list of weights to apply to the server list.
 	 *
-	 * This is an int array with each element corresponding to an element<br/>
+	 * This is an int array with each element corresponding to an element
 	 * in the same position in the server String array. 
 	 * 
 	 * @param weights Integer array of weights
@@ -379,9 +379,9 @@ public class SockIOPool {
 	/** 
 	 * Sets the failover flag for the pool.
 	 *
-	 * If this flag is set to true, and a socket fails to connect,<br/>
-	 * the pool will attempt to return a socket from another server<br/>
-	 * if one exists.  If set to false, then getting a socket<br/>
+	 * If this flag is set to true, and a socket fails to connect,
+	 * the pool will attempt to return a socket from another server
+	 * if one exists.  If set to false, then getting a socket
 	 * will return null if it fails to connect to the requested server.
 	 * 
 	 * @param failover true/false
@@ -749,8 +749,8 @@ public class SockIOPool {
 	/** 
 	 * Creates a new SockIO obj for the given server.
 	 *
-	 * If server fails to connect, then return null and do not try<br/>
-	 * again until a duration has passed.  This duration will grow<br/>
+	 * If server fails to connect, then return null and do not try
+	 * again until a duration has passed.  This duration will grow
 	 * by doubling after each failed attempt to connect. 
 	 * 
 	 * @param host host:port to connect to
@@ -830,8 +830,8 @@ public class SockIOPool {
 	}
 
  	/** 
-	 * @param key 
-	 * @return 
+	 * @param key key
+	 * @return string
 	 */
 	public String getHost( String key ) {
 		return getHost( key, null );
@@ -840,9 +840,9 @@ public class SockIOPool {
 	/** 
 	 * Gets the host that a particular key / hashcode resides on. 
 	 * 
-	 * @param key 
-	 * @param hashcode 
-	 * @return 
+	 * @param key key
+	 * @param hashcode hashcode
+	 * @return String
 	 */
 	public String getHost( String key, Integer hashcode ) {
 		SockIO socket = getSock( key, hashcode );
@@ -991,8 +991,8 @@ public class SockIOPool {
 	/** 
 	 * Returns a SockIO object from the pool for the passed in host.
 	 *
-	 * Meant to be called from a more intelligent method<br/>
-	 * which handles choosing appropriate server<br/>
+	 * Meant to be called from a more intelligent method
+	 * which handles choosing appropriate server
 	 * and failover. 
 	 * 
 	 * @param host host from which to retrieve object
@@ -1138,7 +1138,7 @@ public class SockIOPool {
 	/** 
 	 * Checks a SockIO object in with the pool.
 	 *
-	 * This will remove SocketIO from busy pool, and optionally<br/>
+	 * This will remove SocketIO from busy pool, and optionally
 	 * add to avail pool.
 	 *
 	 * @param socket socket to return
@@ -1172,8 +1172,8 @@ public class SockIOPool {
 	/** 
 	 * Returns a socket to the avail pool.
 	 *
-	 * This is called from SockIO.close().  Calling this method<br/>
-	 * directly without closing the SockIO object first<br/>
+	 * This is called from SockIO.close().  Calling this method
+	 * directly without closing the SockIO object first
 	 * will cause an IOException to be thrown.
 	 * 
 	 * @param socket socket to return
@@ -1213,9 +1213,9 @@ public class SockIOPool {
 	/** 
 	 * Shuts down the pool.
 	 *
-	 * Cleanly closes all sockets.<br/>
-	 * Stops the maint thread.<br/>
-	 * Nulls out all internal maps<br/>
+	 * Cleanly closes all sockets.
+	 * Stops the maint thread.
+	 * Nulls out all internal maps
 	 */
 	public void shutDown() {
 		synchronized( this ) {
@@ -1254,8 +1254,8 @@ public class SockIOPool {
 	/** 
 	 * Starts the maintenance thread.
 	 *
-	 * This thread will manage the size of the active pool<br/>
-	 * as well as move any closed, but not checked in sockets<br/>
+	 * This thread will manage the size of the active pool
+	 * as well as move any closed, but not checked in sockets
 	 * back to the available pool.
 	 */
 	protected void startMaintThread() {
@@ -1446,7 +1446,7 @@ public class SockIOPool {
 	/** 
 	 * Class which extends thread and handles maintenance of the pool.
 	 * 
-	 * @author greg whalin <greg@meetup.com>
+	 * @author greg whalin
 	 * @version 1.5
 	 */
 	protected static class MaintThread extends Thread {
@@ -1511,8 +1511,8 @@ public class SockIOPool {
 	 *
 	 * This class is a wrapper around a Socket and its streams.
 	 *
-	 * @author greg whalin <greg@meetup.com> 
-	 * @author Richard 'toast' Russo <russor@msoe.edu>
+	 * @author greg whalin
+	 * @author Richard 'toast' Russo
 	 * @version 1.5
 	 */
 	public static class SockIO implements LineInputStream {
@@ -1567,7 +1567,8 @@ public class SockIOPool {
 		/** 
 		 * creates a new SockIO object wrapping a socket
 		 * connection to host:port, and its input and output streams
-		 * 
+		 *
+		 * @param pool pool
 		 * @param host hostname:port
 		 * @param timeout read timeout value for connected socket
 		 * @param connectTimeout timeout for initial connections
@@ -1639,6 +1640,7 @@ public class SockIOPool {
 		/** 
 		 * closes socket and all streams connected to it 
 		 *
+		 * @param addToDeadPool addToDeadPool
 		 * @throws IOException if fails to close streams or socket
 		 */
 		public void trueClose( boolean addToDeadPool ) throws IOException {

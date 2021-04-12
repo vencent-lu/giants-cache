@@ -5,7 +5,7 @@
   <parent>
     <groupId>com.github.vencent-lu</groupId>
     <artifactId>giants-cache</artifactId>
-    <version>1.0.5-Beta-7</version>
+    <version>1.1.0</version>
   </parent>
   
   <artifactId>giants-cache-core</artifactId>
@@ -28,24 +28,12 @@
       <artifactId>giants-web</artifactId>
 	  <optional>true</optional>
     </dependency>
-    
-	<dependency>
-      <groupId>commons-lang</groupId>
-      <artifactId>commons-lang</artifactId>
-    </dependency>
-	<dependency>
-      <groupId>commons-collections</groupId>
-      <artifactId>commons-collections</artifactId>
-    </dependency>	
+
 	<dependency>
       <groupId>org.aspectj</groupId>
       <artifactId>aspectjweaver</artifactId>
 	  <optional>true</optional>
     </dependency>
-	<dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>	
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>

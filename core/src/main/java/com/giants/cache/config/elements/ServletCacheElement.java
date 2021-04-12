@@ -41,8 +41,8 @@ public class ServletCacheElement extends CacheElement {
 	}
 
 	/**
-	 * @param name
-	 * @param timeToLive
+	 * @param name name
+	 * @param timeToLive timeToLive
 	 */
 	public ServletCacheElement(String name, Long timeToLive) {
 		super(name, timeToLive);

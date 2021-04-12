@@ -53,6 +53,8 @@ public class Header<T extends Serializable> implements Serializable {
         
         /**
          * Determines the {@link Type} of the Header. Throws IllegalArgumentException if the specified class does not match any of the Types
+         * @param typeClass type class
+         * @return Type
          */
         public static Type determineType(Class<? extends Serializable> typeClass) {
             final Type lookupType = TYPE_LOOKUP.get(typeClass);

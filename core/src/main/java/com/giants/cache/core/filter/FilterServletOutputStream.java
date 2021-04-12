@@ -18,6 +18,7 @@ public class FilterServletOutputStream extends ServletOutputStream {
 
 	    /**
 	     * Creates a FilterServletOutputStream.
+		 * @param stream outputStream
 	     */
 	    public FilterServletOutputStream(final OutputStream stream) {
 	        this.stream = stream;
@@ -25,6 +26,7 @@ public class FilterServletOutputStream extends ServletOutputStream {
 
 	    /**
 	     * Writes to the stream.
+		 * @param b int
 	     */
 	    public void write(final int b) throws IOException {
 	        stream.write(b);
@@ -32,6 +34,7 @@ public class FilterServletOutputStream extends ServletOutputStream {
 
 	    /**
 	     * Writes to the stream.
+		 * @param b byte[]
 	     */
 	    public void write(final byte[] b) throws IOException {
 	        stream.write(b);
@@ -39,6 +42,9 @@ public class FilterServletOutputStream extends ServletOutputStream {
 
 	    /**
 	     * Writes to the stream.
+		 * @param b byte[]
+		 * @param off int
+		 * @param len int
 	     */
 	    public void write(final byte[] b, final int off, final int len) throws IOException {
 	        stream.write(b, off, len);

@@ -19,10 +19,10 @@ public class Element implements Serializable, Cloneable {
 	private Long timeToLive;
 
 	/**
-	 * @param cacheModelName
-	 * @param key
-	 * @param value
-	 * @param timeToLive
+	 * @param cacheModelName cacheModelName
+	 * @param key key
+	 * @param value value
+	 * @param timeToLive timeToLive
 	 */
 	public Element(String cacheModelName, CacheKey key, Object value,
 			Long timeToLive) {
