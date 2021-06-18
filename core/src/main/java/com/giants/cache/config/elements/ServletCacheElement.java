@@ -3,8 +3,10 @@
  */
 package com.giants.cache.config.elements;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import com.giants.common.collections.CollectionUtils;
 import com.giants.common.regex.Pattern;
 import com.giants.xmlmapping.annotation.XmlAttribute;
 import com.giants.xmlmapping.annotation.XmlEntity;
@@ -28,13 +30,17 @@ public class ServletCacheElement extends CacheElement {
 	private boolean queryParam = true;
 	
 	@XmlAttribute
-	private boolean session = false;
+	private boolean cookie = false;
 	
 	@XmlManyElement
 	private List<ExclusionQueryParam> exclusionQueryParams;
+
+	private List<String> exclusionQueryParamList;
 	
 	@XmlManyElement
-	private List<ExclusionSession> exclusionSessions;
+	private List<CookieName> cookieNames;
+
+	private List<String> cookieNameList;
 
 	public ServletCacheElement() {
 		super();
@@ -50,27 +56,17 @@ public class ServletCacheElement extends CacheElement {
 	}
 	
 	public boolean isAllowAccordingParam(String paramName) {
-		if (this.exclusionQueryParams == null) {
+		if (CollectionUtils.isEmpty(this.exclusionQueryParams)) {
 			return true;
 		}
-		for (ExclusionQueryParam exclusionQueryParam : this.exclusionQueryParams) {
-			if (exclusionQueryParam.getName().equals(paramName)) {
-				return false;
-			}
-		}
-		return true;
+		return !this.exclusionQueryParamList.contains(paramName);
 	}
 	
-	public boolean isAllowAccordingSession(String sessionName) {
-		if (this.exclusionSessions == null) {
-			return true;
+	public boolean isAllowCookieName(String cookieName) {
+		if (CollectionUtils.isEmpty(this.cookieNameList)) {
+			return false;
 		}
-		for (ExclusionSession exclusionSession : this.exclusionSessions) {
-			if (exclusionSession.getName().equals(sessionName)) {
-				return false;
-			}
-		}
-		return true;
+		return this.cookieNameList.contains(cookieName);
 	}
 	
 	public Pattern getURIPattern() {
@@ -92,18 +88,12 @@ public class ServletCacheElement extends CacheElement {
 		this.uriPattern = Pattern.compile(this.regex);
 	}
 
-	/**
-	 * @return the session
-	 */
-	public boolean isSession() {
-		return session;
+	public boolean isCookie() {
+		return cookie;
 	}
 
-	/**
-	 * @param session the session to set
-	 */
-	public void setSession(boolean session) {
-		this.session = session;
+	public void setCookie(boolean cookie) {
+		this.cookie = cookie;
 	}
 
 	/**
@@ -126,13 +116,21 @@ public class ServletCacheElement extends CacheElement {
 	public void setExclusionQueryParams(
 			List<ExclusionQueryParam> exclusionQueryParams) {
 		this.exclusionQueryParams = exclusionQueryParams;
+		if (CollectionUtils.isNotEmpty(this.exclusionQueryParams)) {
+			this.exclusionQueryParamList = new ArrayList<String>();
+			for (ExclusionQueryParam exclusionQueryParam : this.exclusionQueryParams) {
+				this.exclusionQueryParamList.add(exclusionQueryParam.getName());
+			}
+		}
 	}
 
-	/**
-	 * @param exclusionSessions the exclusionSessions to set
-	 */
-	public void setExclusionSessions(List<ExclusionSession> exclusionSessions) {
-		this.exclusionSessions = exclusionSessions;
+	public void setCookieNames(List<CookieName> cookieNames) {
+		this.cookieNames = cookieNames;
+		if (CollectionUtils.isNotEmpty(this.cookieNames)) {
+			this.cookieNameList = new ArrayList<String>();
+			for (CookieName cookieName : this.cookieNames) {
+				this.cookieNameList.add(cookieName.getName());
+			}
+		}
 	}
-
 }

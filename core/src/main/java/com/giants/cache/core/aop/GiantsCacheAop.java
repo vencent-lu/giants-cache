@@ -32,9 +32,15 @@ public class GiantsCacheAop {
 	
 	
 	public Object serviceMethodCache(ProceedingJoinPoint service) throws Throwable {
+		if (StringUtils.isEmpty(this.cacheConfigFilePath)) {
+			return service.proceed();
+		}
 		if (this.giantsCacheManager == null) {
 			this.giantsCacheManager = GiantsCacheManager
 					.getInstance(this.cacheConfigFilePath);
+		}
+		if (this.giantsCacheManager == null || this.giantsCacheManager.getCacheConfig() == null) {
+			return service.proceed();
 		}
 		MethodCacheKey cacheKey = this.getMethodCacheKey(service);
 		Object result = this.executeCacheAgent(cacheKey, service);

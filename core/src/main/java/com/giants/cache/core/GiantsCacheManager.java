@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.giants.common.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,23 +48,24 @@ public class GiantsCacheManager {
 
 	public GiantsCacheManager(GiantsCache giantsCache) throws XmlMapException {
 		this.giantsCache = giantsCache;
-		XmlMappingData giantsCacheConfigMappingData = new XmlMappingData(
-				CacheConfig.class);
-		this.giantsCache = giantsCache;
-		try {
-			giantsCacheConfigMappingData.loadXmls(this.giantsCache
-					.getCacheConfigFilePath());
-			XmlDataModule<CacheConfig> xmlDataModule = giantsCacheConfigMappingData
-					.getDataModule(CacheConfig.class);
-			if (xmlDataModule != null && xmlDataModule.isNotEmpty()) {
-				this.cacheConfig = xmlDataModule.getAll().iterator().next();
+		if (StringUtils.isNotEmpty(this.giantsCache.getCacheConfigFilePath())) {
+			XmlMappingData giantsCacheConfigMappingData = new XmlMappingData(
+					CacheConfig.class);
+			try {
+				giantsCacheConfigMappingData.loadXmls(this.giantsCache
+						.getCacheConfigFilePath());
+				XmlDataModule<CacheConfig> xmlDataModule = giantsCacheConfigMappingData
+						.getDataModule(CacheConfig.class);
+				if (xmlDataModule != null && xmlDataModule.isNotEmpty()) {
+					this.cacheConfig = xmlDataModule.getAll().iterator().next();
+				}
+			} catch (XmlDataException e) {
+				loger.error(e.getMessage(), e);
+			} catch (XMLParseException e) {
+				loger.error(e.getMessage(), e);
 			}
-		} catch (XmlDataException e) {
-			loger.error(e.getMessage(), e);
-		} catch (XMLParseException e) {
-			loger.error(e.getMessage(), e);
+			instanceMap.put(this.giantsCache.getCacheConfigFilePath(), this);
 		}
-		instanceMap.put(this.giantsCache.getCacheConfigFilePath(), this);
 	}
 
 	public final CacheElement getCacheElementConf(String modelName,
@@ -96,9 +99,11 @@ public class GiantsCacheManager {
 		}
 		List<ServletCacheElement> servletCacheElements = ((ServletCacheModel) cacheModel)
 				.getCacheElements();
-		for (ServletCacheElement cacheElement : servletCacheElements) {
-			if (cacheElement.getURIPattern().matches(URI)) {
-				return cacheElement;
+		if (CollectionUtils.isNotEmpty(servletCacheElements)) {
+			for (ServletCacheElement cacheElement : servletCacheElements) {
+				if (cacheElement.getURIPattern().matches(URI)) {
+					return cacheElement;
+				}
 			}
 		}
 		if (cacheModel.isDefaultCache()) {

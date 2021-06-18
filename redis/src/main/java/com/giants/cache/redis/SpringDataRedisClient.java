@@ -10,6 +10,7 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisZSetCommands;
+import org.springframework.data.redis.connection.StringRedisConnection;
 import org.springframework.data.redis.core.DefaultTypedTuple;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisCallback;

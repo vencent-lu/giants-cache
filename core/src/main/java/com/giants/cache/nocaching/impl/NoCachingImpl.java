@@ -16,6 +16,10 @@ public class NoCachingImpl extends AbstractGinatsCache {
 	
 	private static final long serialVersionUID = 1660345655961185987L;
 
+	public NoCachingImpl() {
+		this.setCacheConfigFilePath(null);
+	}
+
 	/* (non-Javadoc)
 	 * @see com.giants.cache.GiantsCache#get(com.giants.cache.CacheKey)
 	 */

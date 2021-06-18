@@ -16,7 +16,7 @@ public class ServletCacheKey extends CacheKey {
 	private static final long serialVersionUID = 1707060737974930312L;
 	
 	private Map<String, String> parameterMap;
-	private Map<String, Object> sessionMap;
+	private Map<String, String> cookiesMap;
 	
 	public ServletCacheKey() {
 		super();
@@ -45,9 +45,9 @@ public class ServletCacheKey extends CacheKey {
 	
 	private void init() {
 		this.parameterMap = new HashMap<String, String>();
-		this.sessionMap = new HashMap<String, Object>();
+		this.cookiesMap = new HashMap<String, String>();
 		this.addArgument(this.parameterMap);
-		this.addArgument(this.sessionMap);
+		this.addArgument(this.cookiesMap);
 	}
 	
 	public void setParameter(String key, String value) {
@@ -58,12 +58,12 @@ public class ServletCacheKey extends CacheKey {
 		return this.parameterMap.get(key);
 	}
 	
-	public void setSession(String key, Object value) {
-		this.sessionMap.put(key, value);
+	public void setCookie(String key, String value) {
+		this.cookiesMap.put(key, value);
 	}
 	
-	public Object getSession(String key) {
-		return this.sessionMap.get(key);
+	public String getCookie(String key) {
+		return this.cookiesMap.get(key);
 	}
 
 	/**
@@ -80,18 +80,11 @@ public class ServletCacheKey extends CacheKey {
 		this.parameterMap = parameterMap;
 	}
 
-	/**
-	 * @return the sessionMap
-	 */
-	public Map<String, Object> getSessionMap() {
-		return sessionMap;
+	public Map<String, String> getCookiesMap() {
+		return cookiesMap;
 	}
 
-	/**
-	 * @param sessionMap the sessionMap to set
-	 */
-	public void setSessionMap(Map<String, Object> sessionMap) {
-		this.sessionMap = sessionMap;
+	public void setCookiesMap(Map<String, String> cookiesMap) {
+		this.cookiesMap = cookiesMap;
 	}
-
 }

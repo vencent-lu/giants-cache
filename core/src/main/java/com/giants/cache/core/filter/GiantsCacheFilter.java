@@ -14,9 +14,11 @@ import java.util.TreeSet;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 
 import com.giants.cache.common.CacheConstants;
@@ -62,6 +64,12 @@ public class GiantsCacheFilter extends AbstractFilter {
 	public void doFilter(HttpServletRequest request,
 			HttpServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
+		if (StringUtils.isEmpty(this.cacheConfigFilePath)
+				|| this.giantsCacheManager == null
+				|| this.giantsCacheManager.getCacheConfig() == null) {
+			chain.doFilter(request, response);
+			return;
+		}
 		String URI = request.getServletPath();
 		ServletCacheModel cacheModel = ((ServletCacheModel) this.giantsCacheManager
 				.getCacheConfig().getCacheModel(this.cacheModelName));
@@ -98,6 +106,7 @@ public class GiantsCacheFilter extends AbstractFilter {
 					.getServletCacheElementConf(this.cacheModelName, URI);
 			if (cacheElement == null) {
 				chain.doFilter(request, response);
+				return;
 			} else {
 				CacheKey cacheKey = this.createServletCacheKey(request, URI,
 						cacheElement);
@@ -164,18 +173,17 @@ public class GiantsCacheFilter extends AbstractFilter {
 			}
 		}
 
-		if (cacheElement.isSession()
-				&& request.getSession().getAttributeNames().hasMoreElements()) {
-			Enumeration<String> attributeNames = request.getSession()
-					.getAttributeNames();
-			while (attributeNames.hasMoreElements()) {
-				String sessionName = attributeNames.nextElement();
-				if (cacheElement.isAllowAccordingSession(sessionName)) {
-					servletCacheKey.setSession(sessionName, request
-							.getSession().getAttribute(sessionName));
+		if (cacheElement.isCookie()) {
+			Cookie[] cookies = request.getCookies();
+			if (ArrayUtils.isNotEmpty(cookies)) {
+				for (Cookie cookie : cookies) {
+					if (cacheElement.isAllowCookieName(cookie.getName())) {
+						servletCacheKey.setCookie(cookie.getName(), cookie.getValue());
+					}
 				}
 			}
 		}
+
 		servletCacheKey.setElementConfName(cacheElement.getName());
 
 		return servletCacheKey;
@@ -245,4 +253,11 @@ public class GiantsCacheFilter extends AbstractFilter {
 		}
 	}
 
+	public void setCacheModelName(String cacheModelName) {
+		this.cacheModelName = cacheModelName;
+	}
+
+	public void setCacheConfigFilePath(String cacheConfigFilePath) {
+		this.cacheConfigFilePath = cacheConfigFilePath;
+	}
 }

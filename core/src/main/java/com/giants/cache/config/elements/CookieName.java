@@ -14,7 +14,7 @@ import com.giants.xmlmapping.annotation.XmlIdKey;
  *
  */
 @XmlEntity
-public class ExclusionSession implements Serializable {
+public class CookieName implements Serializable {
 
 	private static final long serialVersionUID = 4183999977377426007L;
 	

@@ -231,19 +231,21 @@ public class ResponseWrapper extends HttpServletResponseWrapper
         for (final Map.Entry<String, List<Serializable>> headerEntry : this.headersMap.entrySet()) {
             String name = headerEntry.getKey();
             for (final Serializable value : headerEntry.getValue()) {
-                Type type = Header.Type.determineType(value.getClass());
-                switch (type) {
-                    case STRING:
-                        headers.add(new Header<String>(name, (String)value));
-                    break;
-                    case DATE:
-                        headers.add(new Header<Long>(name, (Long)value));
-                    break;
-                    case INT:
-                        headers.add(new Header<Integer>(name, (Integer)value));
-                    break;
-                    default:
-                        throw new IllegalArgumentException("No mapping for Header.Type: " + type);
+                if (value != null) {
+                    Type type = Header.Type.determineType(value.getClass());
+                    switch (type) {
+                        case STRING:
+                            headers.add(new Header<String>(name, (String)value));
+                            break;
+                        case DATE:
+                            headers.add(new Header<Long>(name, (Long)value));
+                            break;
+                        case INT:
+                            headers.add(new Header<Integer>(name, (Integer)value));
+                            break;
+                        default:
+                            throw new IllegalArgumentException("No mapping for Header.Type: " + type);
+                    }
                 }
             }
         }
