@@ -110,7 +110,7 @@
     <project-name>giants-cache</project-name>
 	
 	<!-- 依赖库版本定义 -->
-	<spring.version>4.2.5.RELEASE</spring.version>
+	<spring.version>6.0.0</spring.version>
         
     <!-- Plugin的属性定义 -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
