@@ -399,6 +399,58 @@ GET /purge/product/123.html
 
 将清除 `/product/123.html` 的缓存，随后重定向到清除后的 URI。非白名单 IP 的清除请求会被忽略。
 
+### 5.5 请求处理时序图
+
+`GiantsCacheFilter` 只负责响应数据缓存，与 [第 7 节](#7-分布式-session) 的会话管理彼此独立。下图展示一次请求的响应缓存处理过程，`GiantsCache` 为缓存后端实现（`GiantsEhcacheImpl` / `GiantsRedisImpl` / `GiantsMemcachedImpl` 之一）。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as 客户端
+    participant CF as GiantsCacheFilter
+    participant M as GiantsCacheManager
+    participant GC as GiantsCache（后端）
+    participant S as 目标 Servlet
+
+    C->>CF: HTTP 请求
+    Note over CF: 按 servletPath 用 regex<br/>匹配 servletCacheElement
+    CF->>M: getServletCacheElementConf(model, URI)
+    M-->>CF: ServletCacheElement / null
+
+    alt 未命中缓存配置
+        CF->>S: 直接放行
+        S-->>CF: 响应
+        CF-->>C: 响应（不缓存）
+    else 命中配置
+        Note over CF: 构建缓存 Key<br/>URI + 查询参数 + 指定 Cookie
+        CF->>M: getCacheElement(key)
+        M->>GC: get(key)
+        alt 缓存命中且未过期
+            GC-->>M: ServletResultInfo
+            M-->>CF: 缓存的响应
+            Note over CF: 回写状态码 / Header / Cookie / Body
+            CF-->>C: 缓存响应
+        else 未命中 / 已过期
+            GC-->>M: null
+            M-->>CF: null
+            Note over CF: 用 ResponseWrapper 捕获响应
+            CF->>S: 执行请求
+            S-->>CF: 响应
+            alt 状态码 200 且响应体非空
+                CF->>M: putCacheElement(ServletResultInfo, timeToLive)
+                M->>GC: put(element)
+            end
+            CF-->>C: 响应
+        end
+    end
+```
+
+**要点：**
+
+- 先按 `regex` 匹配 `servletCacheElement`，未命中配置的请求直接放行、不参与缓存。
+- 缓存 Key 由 URI +（可选）查询参数 +（可选）指定 Cookie 组成。
+- 仅当**状态码 200 且响应体非空**时写入缓存；命中时原样回放状态码、Header、Cookie 与 Body。
+
 ---
 
 ## 6. 缓存后端配置
@@ -622,62 +674,39 @@ Redis 后端以 Set 记录每个 `elementConfName` 对应的所有 Key，`remove
 
 ### 7.5 请求处理时序图
 
-下图展示一次 HTTP 请求同时经过 `GiantsSessionFilter` 与 `GiantsCacheFilter` 的完整处理过程（Filter 链顺序：先 Session、后响应缓存）。图中 `SessionCache` 与 `GiantsCache` 分别代表 Session 后端与响应缓存后端（EhCache / Redis / Memcached 之一）。
+`GiantsSessionFilter` 只负责会话信息管理，与 [第 5 节](#5-servlet-响应缓存filter) 的响应缓存彼此独立。下图展示一次请求的 Session 处理过程，`SessionCache` 为 Session 后端实现（`GiantsSessionRedisImpl` / `GiantsSessionEhcacheImpl` / `GiantsSessionMemcachedImpl` 之一）。
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant C as 客户端
     participant SF as GiantsSessionFilter
+    participant RQ as GiantsHttpSessionServletRequest
     participant SC as GiantsSessionCache
-    participant CF as GiantsCacheFilter
-    participant M as GiantsCacheManager
-    participant GC as GiantsCache（后端）
-    participant S as 目标 Servlet
+    participant S as 目标 Servlet / 业务逻辑
 
     C->>SF: HTTP 请求（携带 GSESSIONID）
-    Note over SF: 用 GiantsHttpSessionServletRequest 包装请求<br/>拦截 getSession()
-    SF->>SC: getSession(sessionId)
+    Note over SF,RQ: 用 GiantsHttpSessionServletRequest<br/>包装请求，拦截 getSession()
+    SF->>S: 放行（传入包装后的请求）
+
+    S->>RQ: getSession() / getSession(true)
+    RQ->>SC: getSession(sessionId)
     alt 命中且未过期
-        SC-->>SF: GiantsSession（刷新过期时间）
+        SC-->>RQ: GiantsSession（刷新过期时间）
     else 不存在 / 已失效
-        SC-->>SF: null
-        Note over SF: 首次 getSession(true) 时新建 Session<br/>生成 UUID，下发 GSESSIONID Cookie
+        SC-->>RQ: null
+        Note over RQ: create=true 时新建 Session<br/>生成 UUID，下发 GSESSIONID Cookie
     end
+    RQ-->>S: HttpSession
+    Note over S: setAttribute / removeAttribute<br/>标记 isUpdate
+    S-->>SF: 响应
 
-    SF->>CF: 传递包装后的请求
-
-    Note over CF: 按 servletPath 用 regex 匹配 servletCacheElement
-    CF->>M: getServletCacheElementConf(model, URI)
-    M-->>CF: ServletCacheElement / null
-
-    alt 未命中缓存配置
-        CF->>S: 直接放行
-        S-->>CF: 响应
-    else 命中配置
-        CF->>M: 按缓存 Key 查询（URI + 参数 + Cookie）
-        M->>GC: get(key)
-        alt 缓存命中且未过期
-            GC-->>M: ServletResultInfo
-            M-->>CF: 缓存的响应
-            Note over CF: 回写状态码 / Header / Cookie / Body
-        else 未命中 / 已过期
-            GC-->>M: null
-            CF->>S: 执行请求（ResponseWrapper 捕获响应）
-            S-->>CF: 响应
-            Note over CF: 状态码 200 且响应体非空时写入
-            CF->>M: put(ServletResultInfo, timeToLive)
-            M->>GC: put(element)
-        end
-    end
-
-    CF-->>SF: 响应
     Note over SF: finally 阶段处理 Session
-    alt Session 已失效
+    alt Session 已失效（isExpiring）
         SF->>SC: removeSession(session)
-    else 新建 / 被修改
+    else 新建或被修改（isNew / isUpdate）
         SF->>SC: putSession(session)
-        opt 配置了超时
+        opt maxInactiveInterval != -1
             SF->>SC: expireSession(session) 刷新过期
         end
     end
@@ -686,9 +715,9 @@ sequenceDiagram
 
 **要点：**
 
-- Session 处理跨越请求首尾：进入时读取 / 新建，`finally` 阶段按 `isNew` / `isUpdate` / `isExpiring` 决定写回、删除或刷新过期。
-- 响应缓存仅在**状态码 200 且响应体非空**时写入；命中时原样回放状态码、Header、Cookie 与 Body。
-- 两个 Filter 相互独立，可按需只启用其一；若都启用，建议 `GiantsSessionFilter` 在 `GiantsCacheFilter` 之前，确保被缓存的处理逻辑也能访问到分布式 Session。
+- Session 处理贯穿请求首尾：`getSession()` 被拦截后按需读取 / 新建；`finally` 阶段依据 `isExpiring` / `isNew` / `isUpdate` 决定删除、写回或刷新过期。
+- Session 采用惰性加载——只有业务真正调用 `getSession()` 才会访问后端。
+- Session 属性对象必须实现 `Serializable`（分布式后端需序列化）。
 
 ---
 
