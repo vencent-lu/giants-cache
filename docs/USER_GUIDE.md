@@ -40,6 +40,63 @@ giants-cache 由以下几个核心角色构成：
 | `GiantsSessionFilter` | Servlet Filter | 用缓存后端替换容器 Session |
 | `CacheConfig` | 配置模型 | 与 `giants-cache.xml` 一一映射 |
 
+### 整体架构
+
+giants-cache 采用「拦截层 → 管理层 → 后端层」的分层结构：拦截层无侵入地捕获方法调用与 HTTP 请求，管理层依据 `giants-cache.xml` 决定是否缓存并统一收敛到 `GiantsCache` 接口，后端层则可插拔地对接不同缓存组件。
+
+```mermaid
+flowchart TB
+    subgraph APP["业务应用（零改动）"]
+        SVC["Service 方法调用"]
+        WEB["HTTP 请求"]
+    end
+
+    subgraph INTERCEPT["拦截层"]
+        AOP["GiantsCacheAop<br/>(Spring AOP around)"]
+        CFILTER["GiantsCacheFilter<br/>(Servlet Filter)"]
+        SFILTER["GiantsSessionFilter<br/>(Servlet Filter)"]
+    end
+
+    subgraph MANAGE["管理层"]
+        MGR["GiantsCacheManager<br/>按路径单例"]
+        CONF["CacheConfig<br/>(giants-cache.xml)"]
+        SCACHE["GiantsSessionCache"]
+        API["GiantsCache 接口<br/>get / put / remove / removeAll"]
+    end
+
+    subgraph BACKEND["后端层（可插拔）"]
+        EH["GiantsEhcacheImpl<br/>EhCache 本地"]
+        RD["GiantsRedisImpl<br/>Redis(Jedis / SpringData)"]
+        MC["GiantsMemcachedImpl<br/>Memcached"]
+        NO["NoCachingImpl<br/>空实现"]
+    end
+
+    SVC --> AOP
+    WEB --> CFILTER
+    WEB --> SFILTER
+
+    AOP --> MGR
+    CFILTER --> MGR
+    SFILTER --> SCACHE
+
+    MGR --> CONF
+    MGR --> API
+    SCACHE -. 注册到 .-> MGR
+
+    API --> EH
+    API --> RD
+    API --> MC
+    API --> NO
+
+    RD --> REDIS[("Redis")]
+    MC --> MEMD[("Memcached")]
+    EH --> JVM[("JVM 堆内存")]
+```
+
+- **拦截层**：`GiantsCacheAop` 与两个 Filter 均不要求业务代码引入缓存 API，规则完全由外部配置驱动。
+- **管理层**：`GiantsCacheManager` 以配置文件路径为 key 维护单例，加载 `CacheConfig` 并把读写请求转发给 `GiantsCache` 实现；Session 缓存实现构造时自动注册到管理器。
+- **后端层**：所有后端实现同一 `GiantsCache` 接口，切换后端只需替换 Spring 中的 `giantsCache` bean，其余配置不变。
+
 ### 工作流程（方法缓存）
 
 ```
@@ -562,6 +619,76 @@ Redis 后端以 Set 记录每个 `elementConfName` 对应的所有 Key，`remove
 - 请求结束后，Filter 在 `finally` 中处理：Session 失效则从缓存删除；新建或被修改（调用过 `setAttribute`/`removeAttribute`）则写回缓存；配置了超时则调用 `expireSession` 刷新过期时间。
 - 新建 Session 时生成去掉短横线的大写 UUID 作为 ID，并下发 `sessionIdName` Cookie。
 - **Session 属性对象必须实现 `Serializable`**（分布式后端需序列化）。
+
+### 7.5 请求处理时序图
+
+下图展示一次 HTTP 请求同时经过 `GiantsSessionFilter` 与 `GiantsCacheFilter` 的完整处理过程（Filter 链顺序：先 Session、后响应缓存）。图中 `SessionCache` 与 `GiantsCache` 分别代表 Session 后端与响应缓存后端（EhCache / Redis / Memcached 之一）。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as 客户端
+    participant SF as GiantsSessionFilter
+    participant SC as GiantsSessionCache
+    participant CF as GiantsCacheFilter
+    participant M as GiantsCacheManager
+    participant GC as GiantsCache（后端）
+    participant S as 目标 Servlet
+
+    C->>SF: HTTP 请求（携带 GSESSIONID）
+    Note over SF: 用 GiantsHttpSessionServletRequest 包装请求<br/>拦截 getSession()
+    SF->>SC: getSession(sessionId)
+    alt 命中且未过期
+        SC-->>SF: GiantsSession（刷新过期时间）
+    else 不存在 / 已失效
+        SC-->>SF: null
+        Note over SF: 首次 getSession(true) 时新建 Session<br/>生成 UUID，下发 GSESSIONID Cookie
+    end
+
+    SF->>CF: 传递包装后的请求
+
+    Note over CF: 按 servletPath 用 regex 匹配 servletCacheElement
+    CF->>M: getServletCacheElementConf(model, URI)
+    M-->>CF: ServletCacheElement / null
+
+    alt 未命中缓存配置
+        CF->>S: 直接放行
+        S-->>CF: 响应
+    else 命中配置
+        CF->>M: 按缓存 Key 查询（URI + 参数 + Cookie）
+        M->>GC: get(key)
+        alt 缓存命中且未过期
+            GC-->>M: ServletResultInfo
+            M-->>CF: 缓存的响应
+            Note over CF: 回写状态码 / Header / Cookie / Body
+        else 未命中 / 已过期
+            GC-->>M: null
+            CF->>S: 执行请求（ResponseWrapper 捕获响应）
+            S-->>CF: 响应
+            Note over CF: 状态码 200 且响应体非空时写入
+            CF->>M: put(ServletResultInfo, timeToLive)
+            M->>GC: put(element)
+        end
+    end
+
+    CF-->>SF: 响应
+    Note over SF: finally 阶段处理 Session
+    alt Session 已失效
+        SF->>SC: removeSession(session)
+    else 新建 / 被修改
+        SF->>SC: putSession(session)
+        opt 配置了超时
+            SF->>SC: expireSession(session) 刷新过期
+        end
+    end
+    SF-->>C: HTTP 响应
+```
+
+**要点：**
+
+- Session 处理跨越请求首尾：进入时读取 / 新建，`finally` 阶段按 `isNew` / `isUpdate` / `isExpiring` 决定写回、删除或刷新过期。
+- 响应缓存仅在**状态码 200 且响应体非空**时写入；命中时原样回放状态码、Header、Cookie 与 Body。
+- 两个 Filter 相互独立，可按需只启用其一；若都启用，建议 `GiantsSessionFilter` 在 `GiantsCacheFilter` 之前，确保被缓存的处理逻辑也能访问到分布式 Session。
 
 ---
 
