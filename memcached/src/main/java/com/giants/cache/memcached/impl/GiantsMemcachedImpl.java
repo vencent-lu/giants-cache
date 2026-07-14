@@ -11,6 +11,7 @@ import java.util.List;
 
 import com.caucho.hessian.io.AbstractHessianOutput;
 import com.caucho.hessian.io.Hessian2Output;
+import com.giants.cache.config.CacheConfigBuilder;
 import com.giants.cache.core.AbstractGinatsCache;
 import com.giants.cache.core.CacheKey;
 import com.giants.cache.core.Element;
@@ -30,9 +31,9 @@ public class GiantsMemcachedImpl extends AbstractGinatsCache {
 
 	private static final long serialVersionUID = 2304220787341967107L;
 
-	public GiantsMemcachedImpl() throws XmlMapException, XmlDataException,
+	public GiantsMemcachedImpl(CacheConfigBuilder cacheConfigBuilder) throws XmlMapException, XmlDataException,
 			XMLParseException {
-		super();
+		super(cacheConfigBuilder);
 		MemcachedManager.initialize();
 	}
 	

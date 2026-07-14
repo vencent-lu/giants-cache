@@ -6,6 +6,7 @@ package com.giants.cache.ehcache.impl;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.giants.cache.config.CacheConfigBuilder;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 
@@ -23,7 +24,11 @@ public class GiantsEhcacheImpl extends AbstractGinatsCache {
 	private static final long serialVersionUID = -7344306333781609447L;
 	
 	private CacheManager cacheManager = CacheManager.getInstance();
-	
+
+	public GiantsEhcacheImpl(CacheConfigBuilder cacheConfigBuilder) {
+		super(cacheConfigBuilder);
+	}
+
 	private Cache getCacheModel(String cacheModelName) throws UndefinedCacheModelException {
 		Cache cache = this.cacheManager.getCache(cacheModelName);
 		if (cache == null) {

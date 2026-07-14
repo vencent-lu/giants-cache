@@ -5,6 +5,7 @@ package com.giants.cache.core;
 
 import java.io.Serializable;
 
+import com.giants.cache.config.CacheConfigBuilder;
 import com.giants.cache.core.exception.UndefinedCacheModelException;
 
 /**
@@ -12,9 +13,8 @@ import com.giants.cache.core.exception.UndefinedCacheModelException;
  *
  */
 public interface GiantsCache  extends Serializable {
-	
-	void setCacheConfigFilePath(String cacheConfigFilePath);
-	String getCacheConfigFilePath();
+
+	CacheConfigBuilder getCacheConfigBuilder();
 	Element get(CacheKey key) throws UndefinedCacheModelException;
 	void put(Element element) throws UndefinedCacheModelException;
 	void remove(Element element) throws UndefinedCacheModelException;

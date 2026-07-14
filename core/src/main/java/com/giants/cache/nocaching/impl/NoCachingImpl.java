@@ -3,6 +3,7 @@
  */
 package com.giants.cache.nocaching.impl;
 
+import com.giants.cache.config.CacheConfigBuilder;
 import com.giants.cache.core.AbstractGinatsCache;
 import com.giants.cache.core.CacheKey;
 import com.giants.cache.core.Element;
@@ -17,7 +18,7 @@ public class NoCachingImpl extends AbstractGinatsCache {
 	private static final long serialVersionUID = 1660345655961185987L;
 
 	public NoCachingImpl() {
-		this.setCacheConfigFilePath(null);
+		super(null);
 	}
 
 	/* (non-Javadoc)

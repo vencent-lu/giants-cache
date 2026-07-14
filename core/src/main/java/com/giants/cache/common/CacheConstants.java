@@ -8,7 +8,8 @@ package com.giants.cache.common;
  *
  */
 public class CacheConstants {
-	
+
+	public final static String DEFAULT_CONFIG_KEY = "default";
 	public final static String DEFAULT_CONFIG_FILE_PATH = "giants-cache.xml";
 
 }

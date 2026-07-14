@@ -38,7 +38,7 @@ import com.giants.web.filter.AbstractFilter;
 public class GiantsCacheFilter extends AbstractFilter {
 	
 	private String cacheModelName;
-	private String cacheConfigFilePath;
+	private String cacheConfigKey;
 	private GiantsCacheManager giantsCacheManager;	
 
 	/* (non-Javadoc)
@@ -48,9 +48,9 @@ public class GiantsCacheFilter extends AbstractFilter {
 	public void init() throws ServletException {
 		this.cacheModelName = this.findInitParameter("cacheModelName",
 				"servlet").trim();
-		this.cacheConfigFilePath = this.findInitParameter("cacheConfigFilePath",
-				CacheConstants.DEFAULT_CONFIG_FILE_PATH).trim();
-		this.giantsCacheManager = GiantsCacheManager.getInstance(this.cacheConfigFilePath);
+		this.cacheConfigKey = this.findInitParameter("cacheConfigKey",
+				CacheConstants.DEFAULT_CONFIG_KEY).trim();
+		this.giantsCacheManager = GiantsCacheManager.getInstance(this.cacheConfigKey);
 	}
 
 	/*
@@ -64,7 +64,7 @@ public class GiantsCacheFilter extends AbstractFilter {
 	public void doFilter(HttpServletRequest request,
 			HttpServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
-		if (StringUtils.isEmpty(this.cacheConfigFilePath)
+		if (StringUtils.isEmpty(this.cacheConfigKey)
 				|| this.giantsCacheManager == null
 				|| this.giantsCacheManager.getCacheConfig() == null) {
 			chain.doFilter(request, response);
@@ -257,7 +257,7 @@ public class GiantsCacheFilter extends AbstractFilter {
 		this.cacheModelName = cacheModelName;
 	}
 
-	public void setCacheConfigFilePath(String cacheConfigFilePath) {
-		this.cacheConfigFilePath = cacheConfigFilePath;
+	public void setCacheConfigKey(String cacheConfigKey) {
+		this.cacheConfigKey = cacheConfigKey;
 	}
 }
