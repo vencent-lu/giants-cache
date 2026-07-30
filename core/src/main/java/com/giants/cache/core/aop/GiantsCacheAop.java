@@ -27,17 +27,17 @@ public class GiantsCacheAop {
 	
 	private String cacheModelName;
 	private GiantsCacheManager giantsCacheManager;
-	private String cacheConfigFilePath = CacheConstants.DEFAULT_CONFIG_FILE_PATH;
+	private String cacheConfigKey;
 	private boolean supportMultipleInstance = false;
 	
 	
 	public Object serviceMethodCache(ProceedingJoinPoint service) throws Throwable {
-		if (StringUtils.isEmpty(this.cacheConfigFilePath)) {
+		if (StringUtils.isEmpty(this.cacheConfigKey)) {
 			return service.proceed();
 		}
 		if (this.giantsCacheManager == null) {
 			this.giantsCacheManager = GiantsCacheManager
-					.getInstance(this.cacheConfigFilePath);
+					.getInstance(this.cacheConfigKey);
 		}
 		if (this.giantsCacheManager == null || this.giantsCacheManager.getCacheConfig() == null) {
 			return service.proceed();
@@ -192,8 +192,8 @@ public class GiantsCacheAop {
 		this.cacheModelName = cacheModelName;
 	}
 
-	public void setCacheConfigFilePath(String cacheConfigFilePath) {
-		this.cacheConfigFilePath = cacheConfigFilePath;
+	public void setCacheConfigKey(String cacheConfigKey) {
+		this.cacheConfigKey = cacheConfigKey;
 	}
 
 	public void setSupportMultipleInstance(boolean supportMultipleInstance) {

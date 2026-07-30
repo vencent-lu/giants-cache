@@ -5,6 +5,7 @@ package com.giants.cache.redis.impl;
 
 import java.util.Set;
 
+import com.giants.cache.config.CacheConfigBuilder;
 import com.giants.cache.core.AbstractGinatsCache;
 import com.giants.cache.core.CacheKey;
 import com.giants.cache.core.Element;
@@ -21,7 +22,11 @@ public class GiantsRedisImpl extends AbstractGinatsCache {
 	private static final long serialVersionUID = -3665120789171008897L;
 	
 	private RedisClient redisClient;
-		
+
+	public GiantsRedisImpl(CacheConfigBuilder cacheConfigBuilder) {
+		super(cacheConfigBuilder);
+	}
+
 	/* (non-Javadoc)
 	 * @see com.giants.cache.GiantsCache#get(com.giants.cache.CacheKey)
 	 */

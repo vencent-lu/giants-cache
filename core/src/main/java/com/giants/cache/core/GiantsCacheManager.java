@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.giants.cache.core;
 
 import java.util.HashMap;
@@ -8,10 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.giants.common.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.giants.cache.config.CacheConfig;
 import com.giants.cache.config.elements.CacheElement;
 import com.giants.cache.config.elements.CacheModel;
@@ -21,11 +14,6 @@ import com.giants.cache.config.elements.ServletCacheElement;
 import com.giants.cache.config.elements.ServletCacheModel;
 import com.giants.cache.core.exception.UndefinedCacheModelException;
 import com.giants.cache.core.session.GiantsSessionCache;
-import com.giants.xmlmapping.XmlDataModule;
-import com.giants.xmlmapping.XmlMappingData;
-import com.giants.xmlmapping.config.exception.XmlMapException;
-import com.giants.xmlmapping.exception.XMLParseException;
-import com.giants.xmlmapping.exception.XmlDataException;
 
 /**
  * @author vencent.lu
@@ -33,39 +21,20 @@ import com.giants.xmlmapping.exception.XmlDataException;
  */
 public class GiantsCacheManager {
 
-	protected static final Logger loger = LoggerFactory
-			.getLogger(GiantsCacheManager.class);
-
-	private CacheConfig cacheConfig;
-	private GiantsCache giantsCache;
+	private final CacheConfig cacheConfig;
+	private final GiantsCache giantsCache;
 	
-	private static volatile Map<String, GiantsCacheManager> instanceMap = new HashMap<String, GiantsCacheManager>();
+	private static final Map<String, GiantsCacheManager> instanceMap = new HashMap<>();
 	private static GiantsSessionCache giantsSessionCache;
 	
-	public static GiantsCacheManager getInstance(String cacheConfigFilePath) {
-		return instanceMap.get(cacheConfigFilePath);
+	public static GiantsCacheManager getInstance(String cacheConfigKey) {
+		return instanceMap.get(cacheConfigKey);
 	}
 
-	public GiantsCacheManager(GiantsCache giantsCache) throws XmlMapException {
+	public GiantsCacheManager(GiantsCache giantsCache) {
 		this.giantsCache = giantsCache;
-		if (StringUtils.isNotEmpty(this.giantsCache.getCacheConfigFilePath())) {
-			XmlMappingData giantsCacheConfigMappingData = new XmlMappingData(
-					CacheConfig.class);
-			try {
-				giantsCacheConfigMappingData.loadXmls(this.giantsCache
-						.getCacheConfigFilePath());
-				XmlDataModule<CacheConfig> xmlDataModule = giantsCacheConfigMappingData
-						.getDataModule(CacheConfig.class);
-				if (xmlDataModule != null && xmlDataModule.isNotEmpty()) {
-					this.cacheConfig = xmlDataModule.getAll().iterator().next();
-				}
-			} catch (XmlDataException e) {
-				loger.error(e.getMessage(), e);
-			} catch (XMLParseException e) {
-				loger.error(e.getMessage(), e);
-			}
-			instanceMap.put(this.giantsCache.getCacheConfigFilePath(), this);
-		}
+		this.cacheConfig = giantsCache.getCacheConfigBuilder().build();
+		instanceMap.put(this.giantsCache.getCacheConfigBuilder().getCacheConfigKey(), this);
 	}
 
 	public final CacheElement getCacheElementConf(String modelName,
@@ -94,7 +63,7 @@ public class GiantsCacheManager {
 			return null;
 		}
 		CacheModel cacheModel = this.cacheConfig.getCacheModel(modelName);
-		if (cacheModel == null || !(cacheModel instanceof ServletCacheModel)) {
+		if (!(cacheModel instanceof ServletCacheModel)) {
 			return null;
 		}
 		List<ServletCacheElement> servletCacheElements = ((ServletCacheModel) cacheModel)
