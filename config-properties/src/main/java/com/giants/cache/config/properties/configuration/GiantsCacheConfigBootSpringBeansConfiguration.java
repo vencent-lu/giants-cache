@@ -1,5 +1,6 @@
 package com.giants.cache.config.properties.configuration;
 
+import com.giants.cache.config.CacheConfigBuilder;
 import com.giants.cache.config.properties.CacheConfigPropertiesBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,10 +14,10 @@ import org.springframework.context.annotation.Configuration;
  * @since 1.2
  */
 @Configuration
-public class GiantsCacheConfigPropertiesBootSpringBeansConfiguration {
+public class GiantsCacheConfigBootSpringBeansConfiguration {
 
     @Bean
-    public CacheConfigPropertiesBuilder createCacheConfigPropertiesBuilder(GiantsCacheConfigProperties giantsCacheConfigProperties) {
+    public CacheConfigBuilder createCacheConfigBuilder(GiantsCacheConfigProperties giantsCacheConfigProperties) {
         return new CacheConfigPropertiesBuilder(giantsCacheConfigProperties);
     }
 

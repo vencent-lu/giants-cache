@@ -17,8 +17,8 @@ public class NoCachingImpl extends AbstractGinatsCache {
 	
 	private static final long serialVersionUID = 1660345655961185987L;
 
-	public NoCachingImpl() {
-		super(null);
+	public NoCachingImpl(CacheConfigBuilder cacheConfigBuilder) {
+		super(cacheConfigBuilder);
 	}
 
 	/* (non-Javadoc)

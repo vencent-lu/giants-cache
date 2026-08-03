@@ -1,8 +1,10 @@
 package com.giants.cache.config.properties.configuration;
 
+import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.Ordered;
 
 /**
  * GiantsCacheConfigPropertiesBootConfiguration TODO
@@ -13,7 +15,8 @@ import org.springframework.context.annotation.Import;
  * @since 1.2
  */
 @Configuration
+@AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @EnableConfigurationProperties({GiantsCacheConfigProperties.class})
-@Import(GiantsCacheConfigPropertiesBootSpringBeansConfiguration.class)
-public class GiantsCacheConfigPropertiesBootConfiguration {
+@Import(GiantsCacheConfigBootSpringBeansConfiguration.class)
+public class GiantsCacheConfigBootConfiguration {
 }

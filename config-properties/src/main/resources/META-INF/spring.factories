@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.giants.cache.config.properties.configuration.GiantsCacheConfigPropertiesBootConfiguration
+com.giants.cache.config.properties.configuration.GiantsCacheConfigBootConfiguration
