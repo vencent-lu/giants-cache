@@ -1,8 +1,14 @@
 # giants-cache 使用手册
 
-> 版本：1.1.2 ｜ groupId：`com.github.vencent-lu`
+> 版本：1.2.0 ｜ groupId：`com.github.vencent-lu`
 
-giants-cache 是一个**无 API 侵入**的 Java 缓存中间层。它通过一份 XML 配置文件描述缓存规则，运行时以 AOP（方法层）和 Servlet Filter（Web 层）的方式拦截调用，把结果写入可插拔的缓存后端（EhCache / Redis / Memcached）。业务代码无需引入任何缓存 API。
+giants-cache 是一个**无 API 侵入**的 Java 缓存中间层。它支持 **XML 与 Properties/YAML 两种配置方式**，运行时以 AOP（方法层）和 Servlet Filter（Web 层）的方式拦截调用，把结果写入可插拔的缓存后端（EhCache / Redis / Memcached）。业务代码无需引入任何缓存 API。
+
+**1.2.0 版本新特性**：
+- 引入 `CacheConfigBuilder` 抽象，支持多种配置加载方式
+- 新增 `giants-cache-config-xml` 与 `giants-cache-config-properties` 配置模块
+- Properties/YAML 配置方式支持 `@RefreshScope`，配合 Nacos Config 实现**缓存规则热更新**
+- 提供 Spring Boot 自动配置支持，简化接入流程
 
 ---
 
@@ -10,7 +16,10 @@ giants-cache 是一个**无 API 侵入**的 Java 缓存中间层。它通过一�
 
 1. [核心概念与架构](#1-核心概念与架构)
 2. [安装与依赖](#2-安装与依赖)
-3. [配置文件 giants-cache.xml 详解](#3-配置文件-giants-cachexml-详解)
+3. [配置方式选择](#3-配置方式选择)
+   - [3.1 XML 配置方式](#31-xml-配置方式)
+   - [3.2 Properties/YAML 配置方式](#32-propertiesyaml-配置方式)
+   - [3.3 配置方式对比](#33-配置方式对比)
 4. [方法结果缓存（AOP）](#4-方法结果缓存aop)
 5. [Servlet 响应缓存（Filter）](#5-servlet-响应缓存filter)
 6. [缓存后端配置](#6-缓存后端配置)
@@ -32,17 +41,18 @@ giants-cache 由以下几个核心角色构成：
 
 | 角色 | 类型 | 职责 |
 | --- | --- | --- |
-| `GiantsCache` | 接口 | 缓存后端统一抽象：`get` / `put` / `remove` / `removeAll` |
-| `AbstractGinatsCache` | 抽象类 | `GiantsCache` 的基类，持有 `cacheConfigFilePath` |
-| `GiantsCacheManager` | 管理器 | 加载 XML 配置、按配置查找缓存元素、桥接后端实现 |
+| `CacheConfigBuilder` | 接口 | 配置加载器抽象：`build()` 方法返回 `CacheConfig`，由不同实现支持 XML / Properties 等加载方式 |
+| `GiantsCache` | 接口 | 缓存后端统一抽象：`get` / `put` / `remove` / `removeAll`，持有 `CacheConfigBuilder` |
+| `AbstractGinatsCache` | 抽象类 | `GiantsCache` 的基类，构造时接收 `CacheConfigBuilder` |
+| `GiantsCacheManager` | 管理器 | 通过 `GiantsCache` 获取配置、按配置查找缓存元素、桥接后端实现，以 `cacheConfigKey` 为 key 维护单例 |
 | `GiantsCacheAop` | AOP 切面 | 拦截方法调用，实现方法结果缓存 |
 | `GiantsCacheFilter` | Servlet Filter | 拦截 HTTP 请求，实现响应缓存 |
 | `GiantsSessionFilter` | Servlet Filter | 用缓存后端替换容器 Session |
-| `CacheConfig` | 配置模型 | 与 `giants-cache.xml` 一一映射 |
+| `CacheConfig` | 配置模型 | 缓存配置的统一接口，由 XML / Properties 对应的实现类提供 |
 
 ### 整体架构
 
-giants-cache 采用「拦截层 → 管理层 → 后端层」的分层结构：拦截层无侵入地捕获方法调用与 HTTP 请求，管理层依据 `giants-cache.xml` 决定是否缓存并统一收敛到 `GiantsCache` 接口，后端层则可插拔地对接不同缓存组件。
+giants-cache 采用「拦截层 → 管理层 → 配置层 → 后端层」的分层结构：拦截层无侵入地捕获方法调用与 HTTP 请求，管理层依据配置决定是否缓存并统一收敛到 `GiantsCache` 接口，配置层通过 `CacheConfigBuilder` 抽象支持多种加载方式，后端层则可插拔地对接不同缓存组件。
 
 ```mermaid
 flowchart TB
@@ -58,10 +68,16 @@ flowchart TB
     end
 
     subgraph MANAGE["管理层"]
-        MGR["GiantsCacheManager<br/>按路径单例"]
-        CONF["CacheConfig<br/>(giants-cache.xml)"]
+        MGR["GiantsCacheManager<br/>按 cacheConfigKey 单例"]
         SCACHE["GiantsSessionCache"]
         API["GiantsCache 接口<br/>get / put / remove / removeAll"]
+    end
+
+    subgraph CONFIG["配置层（可选择）"]
+        BUILDER["CacheConfigBuilder 接口"]
+        XMLB["CacheConfigXmlBuilder<br/>(config-xml 模块)"]
+        PROPB["CacheConfigPropertiesBuilder<br/>(config-properties 模块)"]
+        CONF["CacheConfig 接口<br/>(统一配置模型)"]
     end
 
     subgraph BACKEND["后端层（可插拔）"]
@@ -69,6 +85,12 @@ flowchart TB
         RD["GiantsRedisImpl<br/>Redis(Jedis / SpringData)"]
         MC["GiantsMemcachedImpl<br/>Memcached"]
         NO["NoCachingImpl<br/>空实现"]
+    end
+
+    subgraph SOURCE["配置源"]
+        XML["giants-cache.xml"]
+        YAML["application.yml<br/>giants.cache.config-map"]
+        NACOS["Nacos Config<br/>(@RefreshScope 热更新)"]
     end
 
     SVC --> AOP
@@ -79,14 +101,22 @@ flowchart TB
     CFILTER --> MGR
     SFILTER --> SCACHE
 
-    MGR --> CONF
     MGR --> API
+    API --> BUILDER
+    BUILDER --> CONF
     SCACHE -. 注册到 .-> MGR
 
-    API --> EH
-    API --> RD
-    API --> MC
-    API --> NO
+    XMLB -.实现.-> BUILDER
+    PROPB -.实现.-> BUILDER
+
+    XML --> XMLB
+    YAML --> PROPB
+    NACOS --> PROPB
+
+    API -.注入.-> EH
+    API -.注入.-> RD
+    API -.注入.-> MC
+    API -.注入.-> NO
 
     RD --> REDIS[("Redis")]
     MC --> MEMD[("Memcached")]
@@ -94,8 +124,9 @@ flowchart TB
 ```
 
 - **拦截层**：`GiantsCacheAop` 与两个 Filter 均不要求业务代码引入缓存 API，规则完全由外部配置驱动。
-- **管理层**：`GiantsCacheManager` 以配置文件路径为 key 维护单例，加载 `CacheConfig` 并把读写请求转发给 `GiantsCache` 实现；Session 缓存实现构造时自动注册到管理器。
-- **后端层**：所有后端实现同一 `GiantsCache` 接口，切换后端只需替换 Spring 中的 `giantsCache` bean，其余配置不变。
+- **管理层**：`GiantsCacheManager` 以 `cacheConfigKey`（默认 `"default"`）为 key 维护单例，通过 `giantsCache.getCacheConfigBuilder().build()` 获取配置并转发读写请求；Session 缓存实现构造时自动注册到管理器。
+- **配置层**：`CacheConfigBuilder` 接口抽象配置加载逻辑，`CacheConfigXmlBuilder` 解析 XML 文件，`CacheConfigPropertiesBuilder` 从 `@ConfigurationProperties` 读取，后者支持 `@RefreshScope` 实现热更新。
+- **后端层**：所有后端实现同一 `GiantsCache` 接口且构造时接收 `CacheConfigBuilder`，切换后端只需替换 Spring 中的 `giantsCache` bean。
 
 ### 工作流程（方法缓存）
 
@@ -119,10 +150,13 @@ GiantsCacheAop.serviceMethodCache(around 通知)
 
 ### 关键设计点
 
+- **配置加载抽象（CacheConfigBuilder）**：1.2.0 引入 `CacheConfigBuilder` 接口，支持 XML（`CacheConfigXmlBuilder`）与 Properties/YAML（`CacheConfigPropertiesBuilder`）两种加载方式，后续可扩展支持其他配置源。
 - **缓存模型（cacheModel）**：一份配置里可定义多个模型，AOP 切面和 Filter 各自绑定一个模型名（`cacheModelName`），互不干扰。
-- **实例按配置文件路径缓存**：`GiantsCacheManager.getInstance(cacheConfigFilePath)` 以配置文件路径为 key 返回单例，切面与 Filter 通过同一路径共享管理器。
+- **实例按 cacheConfigKey 缓存**：`GiantsCacheManager.getInstance(cacheConfigKey)` 以配置 key（默认 `"default"`）为索引返回单例，切面与 Filter 通过同一 key 共享管理器。
+- **构造函数依赖注入**：所有 `GiantsCache` 后端实现（`GiantsRedisImpl`、`GiantsEhcacheImpl` 等）构造函数**强制要求** `CacheConfigBuilder` 参数。
 - **TTL 单位为秒**：`timeToLive` / `defaultTimeToLive` 单位是**秒**，默认 `300`（5 分钟）；取值 `-1` 表示永不过期。
-- **缓存值需可序列化**：Redis / Memcached 后端会序列化对象（Redis/Memcached 使用 Hessian2），被缓存的返回值、Session 属性等都应实现 `Serializable`。
+- **缓存值需可序列化**：Redis / Memcached 后端会序列化对象（使用 Hessian2），被缓存的返回值、Session 属性等都应实现 `Serializable`。
+- **动态刷新支持**：使用 `config-properties` 模块时，`GiantsCacheConfigProperties` 标注了 `@RefreshScope`，配合 Nacos Config 等配置中心可实现缓存规则热更新。
 
 ---
 
@@ -131,25 +165,45 @@ GiantsCacheAop.serviceMethodCache(around 通知)
 按所选后端引入对应模块（均已传递依赖 `giants-cache-core`）：
 
 ```xml
-<!-- 三选一 -->
+<!-- 三选一：后端实现 -->
 <dependency>
     <groupId>com.github.vencent-lu</groupId>
     <artifactId>giants-cache-ehcache</artifactId>
-    <version>1.1.2</version>
+    <version>1.2.0</version>
 </dependency>
 
 <dependency>
     <groupId>com.github.vencent-lu</groupId>
     <artifactId>giants-cache-redis</artifactId>
-    <version>1.1.2</version>
+    <version>1.2.0</version>
 </dependency>
 
 <dependency>
     <groupId>com.github.vencent-lu</groupId>
     <artifactId>giants-cache-memcached</artifactId>
-    <version>1.1.2</version>
+    <version>1.2.0</version>
 </dependency>
 ```
+
+**配置模块（二选一）**：根据配置方式选择对应模块
+
+```xml
+<!-- XML 配置方式 -->
+<dependency>
+    <groupId>com.github.vencent-lu</groupId>
+    <artifactId>giants-cache-config-xml</artifactId>
+    <version>1.2.0</version>
+</dependency>
+
+<!-- Properties/YAML 配置方式（支持动态刷新） -->
+<dependency>
+    <groupId>com.github.vencent-lu</groupId>
+    <artifactId>giants-cache-config-properties</artifactId>
+    <version>1.2.0</version>
+</dependency>
+```
+
+> **注意**：`config-xml` 与 `config-properties` **只能引入其中一个**，两者都会通过 `spring.factories` 自动注册 `CacheConfigBuilder` bean，同时引入会导致冲突。传统 Spring 项目（非 Spring Boot）也可以不引入配置模块，手动装配 `CacheConfigBuilder`。
 
 运行环境要求：
 
@@ -157,16 +211,28 @@ GiantsCacheAop.serviceMethodCache(around 通知)
 - Spring 4.2.x（`spring-aop`、`spring-tx`、`spring-context`）
 - Servlet 3.0+（仅在使用 `GiantsCacheFilter` / `GiantsSessionFilter` 时需要）
 - 后端组件版本：EhCache 2.6.x、Jedis 2.8.x、Spring Data Redis 2.1.x、Memcached
+- Spring Boot 2.5.x+（可选，使用自动配置时）
+- Spring Cloud Context 3.0.x+（可选，使用 `@RefreshScope` 时）
 
 ---
 
-## 3. 配置文件 giants-cache.xml 详解
+## 3. 配置方式选择
 
-配置文件默认从 classpath 加载，默认文件名 `giants-cache.xml`（常量 `CacheConstants.DEFAULT_CONFIG_FILE_PATH`）。可通过 AOP / Filter 的 `cacheConfigFilePath` 参数改成其他路径。
+giants-cache 1.2.0 支持两种配置方式，按项目需求选择其一。
 
-> **XML 命名规则**：本框架使用自研的 `giants-xmlmapping` 解析 XML。元素标签名 = 对应类名**首字母小写**（如 `MethodCacheModel` → `methodCacheModel`、`PurgeIP` → `purgeIP`）；属性名 = 字段名（camelCase，如 `defaultTimeToLive`、`timeToLive`、`queryParam`）。集合元素（`@XmlManyElement`）的标签名取**元素类型**的类名首字母小写。
+### 3.1 XML 配置方式
 
-### 整体结构
+**适用场景**：传统 Spring 项目、不需要动态刷新、习惯 XML 配置。
+
+**配置文件**：`giants-cache.xml`（默认名称，可自定义），放在 classpath 根目录。
+
+**优点**：结构清晰、层次分明，IDE 提示友好（配合 XSD）。
+
+**缺点**：修改配置需要重启应用。
+
+#### 3.1.1 XML 配置结构
+
+> **XML 命名规则**：本框架使用自研的 `giants-xmlmapping` 解析 XML。元素标签名由 `@XmlEntity` 注解指定（通常为对应类名**首字母小写**）；属性名对应字段名（camelCase，如 `defaultTimeToLive`、`timeToLive`）。集合元素（`@XmlManyElement`）的标签名取**元素类型**的类名首字母小写。
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -247,6 +313,114 @@ GiantsCacheAop.serviceMethodCache(around 通知)
 - `purgeURIPrefix`：清除请求的 URI 前缀。访问 `{purgeURIPrefix}{目标URI}` 且来源 IP 在白名单内时，清除该目标 URI 的缓存。
 - `purgeIP value="IP"`：允许发起清除的客户端 IP 白名单。
 
+#### 3.1.2 Spring Boot 自动配置（XML 方式）
+
+引入 `giants-cache-config-xml` 后，在 `application.yml` 配置：
+
+```yaml
+giants:
+  cache:
+    cache-config-key: default                    # 可选，默认 "default"
+    cache-config-xml-file-path: giants-cache.xml # 可选，默认 "giants-cache.xml"
+```
+
+自动配置会创建 `CacheConfigBuilder` bean，业务代码只需装配后端和 AOP/Filter。
+
+### 3.2 Properties/YAML 配置方式
+
+**适用场景**：Spring Boot 项目、需要集中管理配置、需要配合 Nacos 等配置中心实现动态刷新。
+
+**配置位置**：`application.yml` 或 `application.properties`，通过 `giants.cache.config-map` 定义缓存规则。
+
+**优点**：支持 `@RefreshScope` 热更新、与 Spring Boot 配置体系统一、可直接对接 Nacos Config。
+
+**缺点**：嵌套结构在 YAML 中可能较长。
+
+#### 3.2.1 Properties/YAML 配置结构
+
+```yaml
+giants:
+  cache:
+    name: giants-cache                           # 配置名称
+    config-map:                                  # Map<String, CacheConfig>
+      default:                                   # cacheConfigKey（可多个）
+        name: giants-cache
+        method-cache-models:                     # List<MethodCacheModel>
+          - name: serviceCache                   # 模型名
+            default-cache: false
+            default-time-to-live: 600            # 默认 TTL（秒）
+            cache-elements:                      # List<CacheElement>
+              - name: com.example.service.UserService
+                time-to-live: 300
+                clean-methods:                   # 触发清空的方法
+                  - name: updateUser
+                  - name: deleteUser
+                exclusion-methods:               # 不缓存的方法
+                  - name: sendVerifyCode
+            clear-caches:                        # List<ClearCache> 关联清除
+              - name: com.example.service.OrderService.createOrder
+                clear-elements:
+                  - name: com.example.service.StatService
+        servlet-cache-models:                    # List<ServletCacheModel>
+          - name: servlet
+            default-cache: false
+            default-time-to-live: 300
+            purge-servlet-cache:                 # 可选，远程清除配置
+              name: purge
+              purge-uri-prefix: /purge
+              purge-ips:
+                - value: 127.0.0.1
+            servlet-cache-elements:              # List<ServletCacheElement>
+              - name: productDetail
+                time-to-live: 60
+                regex: /product/.*\.html         # URI 正则匹配
+                query-param: true                # 查询参数纳入 Key
+                cookie: true                     # Cookie 纳入 Key
+                exclusion-query-params:          # 排除的查询参数
+                  - name: _t
+                cookie-names:                    # 纳入 Key 的 Cookie 名
+                  - name: lang
+```
+
+#### 3.2.2 Spring Boot 自动配置（Properties 方式）
+
+引入 `giants-cache-config-properties` 后，自动配置会创建 `CacheConfigBuilder` bean 并启用 `@RefreshScope`。
+
+**配合 Nacos Config 实现动态刷新**：
+
+1. 添加依赖：
+```xml
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+</dependency>
+```
+
+2. 配置 Nacos：
+```yaml
+spring:
+  cloud:
+    nacos:
+      config:
+        server-addr: 127.0.0.1:8848
+        file-extension: yaml
+```
+
+3. 在 Nacos 控制台创建 Data ID 为 `${spring.application.name}.yaml` 的配置，内容为上述 `giants.cache.*` 部分。
+
+4. 修改 Nacos 配置后，应用会自动接收更新，`GiantsCacheManager` 重新 `build()` 配置，**无需重启**。
+
+### 3.3 配置方式对比
+
+| 特性 | XML 配置 | Properties/YAML 配置 |
+| --- | --- | --- |
+| 配置位置 | `giants-cache.xml` | `application.yml` / Nacos |
+| 结构清晰度 | ★★★★★（层次分明） | ★★★☆☆（嵌套较深） |
+| 动态刷新 | ✗ 需重启 | ✓ 支持 `@RefreshScope` |
+| 配置中心集成 | ✗ | ✓ 原生支持 Nacos / Apollo |
+| Spring Boot 集成 | ★★★☆☆ | ★★★★★ |
+| 推荐场景 | 传统 Spring / 配置稳定 | Spring Boot / 需要热更新 |
+
 ---
 
 ## 4. 方法结果缓存（AOP）
@@ -259,18 +433,39 @@ GiantsCacheAop.serviceMethodCache(around 通知)
 
 | 属性 | 默认值 | 说明 |
 | --- | --- | --- |
-| `cacheModelName` | — | 使用的缓存模型名，对应 XML 中某个 `methodCacheModel` 的 `name` |
-| `cacheConfigFilePath` | `giants-cache.xml` | 配置文件路径 |
+| `cacheModelName` | — | 使用的缓存模型名，对应配置中某个 `methodCacheModel` 的 `name` |
+| `cacheConfigKey` | — | 配置 key，对应 `CacheConfigBuilder` 的 key（默认 `"default"`），用于获取 `GiantsCacheManager` 单例 |
 | `supportMultipleInstance` | `false` | 为 `true` 且目标对象实现 `Serializable` 时，会把目标实例纳入缓存 Key（区分不同实例的同名方法调用） |
 
 切面入口方法为 `serviceMethodCache(ProceedingJoinPoint)`，需以 **around** 通知绑定。
 
 ### 4.2 Spring 配置
 
+#### 4.2.1 传统 Spring XML 配置
+
 ```xml
+<!-- 配置加载器（XML 方式） -->
+<bean id="cacheConfigBuilder" class="com.giants.cache.config.xml.CacheConfigXmlBuilder">
+    <constructor-arg value="default"/>                <!-- cacheConfigKey -->
+    <constructor-arg value="giants-cache.xml"/>       <!-- XML 文件路径 -->
+</bean>
+
+<!-- 后端实现（以 Redis 为例） -->
+<bean id="redisClient" class="com.giants.cache.redis.JedisClientImpl">
+    <property name="jedisPool" ref="jedisPool"/>      <!-- jedisPool 配置见 6.2 节 -->
+</bean>
+<bean id="giantsCache" class="com.giants.cache.redis.impl.GiantsRedisImpl">
+    <constructor-arg ref="cacheConfigBuilder"/>       <!-- 必须注入 builder -->
+    <property name="redisClient" ref="redisClient"/>
+</bean>
+<bean id="giantsCacheManager" class="com.giants.cache.core.GiantsCacheManager">
+    <constructor-arg ref="giantsCache"/>
+</bean>
+
+<!-- AOP 切面 -->
 <bean id="giantsCacheAop" class="com.giants.cache.core.aop.GiantsCacheAop">
     <property name="cacheModelName" value="serviceCache"/>
-    <property name="cacheConfigFilePath" value="giants-cache.xml"/>
+    <property name="cacheConfigKey" value="default"/>  <!-- 对应 builder 的 key -->
 </bean>
 
 <aop:config>
@@ -282,7 +477,51 @@ GiantsCacheAop.serviceMethodCache(around 通知)
 </aop:config>
 ```
 
-> 需开启 `<aop:aspectj-autoproxy/>` 或使用 `aspectjweaver`。切面同样可用注解式 AspectJ 或 `@Aspect` 包装，核心是把 `serviceMethodCache` 作为 around 通知。
+#### 4.2.2 Spring Boot + Java Config
+
+```java
+@Configuration
+@EnableAspectJAutoProxy
+public class CacheConfiguration {
+    
+    // CacheConfigBuilder 由 config-xml 或 config-properties 模块自动注册
+    
+    @Bean
+    public GiantsCache giantsCache(CacheConfigBuilder cacheConfigBuilder, RedisClient redisClient) {
+        GiantsRedisImpl cache = new GiantsRedisImpl(cacheConfigBuilder);
+        cache.setRedisClient(redisClient);
+        return cache;
+    }
+    
+    @Bean
+    public GiantsCacheManager giantsCacheManager(GiantsCache giantsCache) {
+        return new GiantsCacheManager(giantsCache);
+    }
+    
+    @Bean
+    public GiantsCacheAop giantsCacheAop() {
+        GiantsCacheAop aop = new GiantsCacheAop();
+        aop.setCacheModelName("serviceCache");
+        aop.setCacheConfigKey("default");
+        return aop;
+    }
+    
+    @Bean
+    public Advisor giantsCacheAdvisor(GiantsCacheAop giantsCacheAop) {
+        AspectJExpressionPointcut pointcut = new AspectJExpressionPointcut();
+        pointcut.setExpression("execution(* com.example.service..*.*(..))");
+        
+        DefaultPointcutAdvisor advisor = new DefaultPointcutAdvisor();
+        advisor.setPointcut(pointcut);
+        advisor.setAdvice((MethodInterceptor) invocation -> 
+            giantsCacheAop.serviceMethodCache(new MethodInvocationProceedingJoinPoint(invocation))
+        );
+        return advisor;
+    }
+}
+```
+
+> 需开启 `<aop:aspectj-autoproxy/>` 或使用 `@EnableAspectJAutoProxy`。切面同样可用注解式 AspectJ 或 `@Aspect` 包装，核心是把 `serviceMethodCache` 作为 around 通知。
 
 ### 4.3 cacheElement 的三级匹配
 
@@ -356,11 +595,11 @@ com.example.service.UserService.getUser(java.lang.Long)
     <filter-class>com.giants.cache.core.filter.GiantsCacheFilter</filter-class>
     <init-param>
         <param-name>cacheModelName</param-name>
-        <param-value>servlet</param-value>          <!-- 默认 servlet -->
+        <param-value>servlet</param-value>              <!-- 默认 servlet -->
     </init-param>
     <init-param>
-        <param-name>cacheConfigFilePath</param-name>
-        <param-value>giants-cache.xml</param-value>  <!-- 默认 giants-cache.xml -->
+        <param-name>cacheConfigKey</param-name>
+        <param-value>default</param-value>              <!-- 默认 default -->
     </init-param>
 </filter>
 <filter-mapping>
@@ -369,7 +608,7 @@ com.example.service.UserService.getUser(java.lang.Long)
 </filter-mapping>
 ```
 
-> `cacheModelName` / `cacheConfigFilePath` 也可通过对应 setter 注入（Filter 继承自 `giants-web` 的 `AbstractFilter`，支持 init-param 与容器初始化）。
+> `cacheModelName` / `cacheConfigKey` 也可通过对应 setter 注入（Filter 继承自 `giants-web` 的 `AbstractFilter`，支持 init-param 与容器初始化）。
 
 ### 5.3 配置示例
 
@@ -455,7 +694,7 @@ sequenceDiagram
 
 ## 6. 缓存后端配置
 
-所有后端都实现 `GiantsCache` 接口，并统一通过构造参数注入 `GiantsCacheManager`：
+所有后端都实现 `GiantsCache` 接口，**构造函数强制要求 `CacheConfigBuilder` 参数**，并通过 `GiantsCacheManager` 桥接：
 
 ```xml
 <bean id="giantsCacheManager" class="com.giants.cache.core.GiantsCacheManager">
@@ -469,7 +708,15 @@ sequenceDiagram
 
 本地 JVM 缓存，实现类 `com.giants.cache.ehcache.impl.GiantsEhcacheImpl`。它使用 EhCache 的 `CacheManager`，**每个缓存模型名对应一个 EhCache `<cache name="...">`**，因此需要额外的 `ehcache.xml`。
 
+#### 6.1.1 传统 Spring XML 配置
+
 ```xml
+<!-- 配置加载器 -->
+<bean id="cacheConfigBuilder" class="com.giants.cache.config.xml.CacheConfigXmlBuilder">
+    <constructor-arg value="default"/>
+    <constructor-arg value="giants-cache.xml"/>
+</bean>
+
 <!-- Spring 托管 EhCache CacheManager -->
 <bean id="ehcacheManager"
       class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
@@ -477,12 +724,34 @@ sequenceDiagram
 </bean>
 
 <bean id="giantsCache" class="com.giants.cache.ehcache.impl.GiantsEhcacheImpl">
+    <constructor-arg ref="cacheConfigBuilder"/>      <!-- 必须注入 builder -->
     <property name="cacheManager" ref="ehcacheManager"/>
 </bean>
 
 <bean id="giantsCacheManager" class="com.giants.cache.core.GiantsCacheManager">
     <constructor-arg ref="giantsCache"/>
 </bean>
+```
+
+#### 6.1.2 Spring Boot + Java Config
+
+```java
+@Configuration
+public class EhCacheConfiguration {
+    
+    @Bean
+    public GiantsCache giantsCache(CacheConfigBuilder cacheConfigBuilder) {
+        GiantsEhcacheImpl cache = new GiantsEhcacheImpl(cacheConfigBuilder);
+        // cacheManager 默认使用 CacheManager.getInstance()
+        // 如需自定义，通过 cache.setCacheManager() 注入
+        return cache;
+    }
+    
+    @Bean
+    public GiantsCacheManager giantsCacheManager(GiantsCache giantsCache) {
+        return new GiantsCacheManager(giantsCache);
+    }
+}
 ```
 
 > 若不注入 `cacheManager`，实现会默认使用 `CacheManager.getInstance()`（读取 classpath 下默认 `ehcache.xml`）。
@@ -505,7 +774,16 @@ sequenceDiagram
 
 实现类 `com.giants.cache.redis.impl.GiantsRedisImpl`，通过 `RedisClient` 抽象访问 Redis。Jedis 客户端为 `com.giants.cache.redis.JedisClientImpl`。
 
+#### 6.2.1 传统 Spring XML 配置
+
 ```xml
+<!-- 配置加载器 -->
+<bean id="cacheConfigBuilder" class="com.giants.cache.config.xml.CacheConfigXmlBuilder">
+    <constructor-arg value="default"/>
+    <constructor-arg value="giants-cache.xml"/>
+</bean>
+
+<!-- Jedis 连接池 -->
 <bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig">
     <property name="maxTotal" value="100"/>
     <property name="maxIdle" value="20"/>
@@ -522,7 +800,9 @@ sequenceDiagram
     <property name="jedisPool" ref="jedisPool"/>
 </bean>
 
+<!-- 缓存后端 -->
 <bean id="giantsCache" class="com.giants.cache.redis.impl.GiantsRedisImpl">
+    <constructor-arg ref="cacheConfigBuilder"/>      <!-- 必须注入 builder -->
     <property name="redisClient" ref="redisClient"/>
 </bean>
 
@@ -531,13 +811,58 @@ sequenceDiagram
 </bean>
 ```
 
+#### 6.2.2 Spring Boot + Java Config
+
+```java
+@Configuration
+public class RedisCacheConfiguration {
+    
+    @Bean
+    public JedisPool jedisPool() {
+        JedisPoolConfig config = new JedisPoolConfig();
+        config.setMaxTotal(100);
+        config.setMaxIdle(20);
+        config.setMinIdle(5);
+        return new JedisPool(config, "127.0.0.1", 6379);
+    }
+    
+    @Bean
+    public RedisClient redisClient(JedisPool jedisPool) {
+        JedisClientImpl client = new JedisClientImpl();
+        client.setJedisPool(jedisPool);
+        return client;
+    }
+    
+    @Bean
+    public GiantsCache giantsCache(CacheConfigBuilder cacheConfigBuilder, RedisClient redisClient) {
+        GiantsRedisImpl cache = new GiantsRedisImpl(cacheConfigBuilder);
+        cache.setRedisClient(redisClient);
+        return cache;
+    }
+    
+    @Bean
+    public GiantsCacheManager giantsCacheManager(GiantsCache giantsCache) {
+        return new GiantsCacheManager(giantsCache);
+    }
+}
+```
+
 Redis 后端以 Set 记录每个 `elementConfName` 对应的所有 Key，`removeAll` 时批量清除；对象序列化采用 Hessian2。
 
 ### 6.3 Redis（Spring Data Redis）
 
 若项目已使用 Spring Data Redis，可改用 `com.giants.cache.redis.SpringDataRedisClient`，注入 `RedisTemplate<byte[], byte[]>`。
 
+#### 6.3.1 传统 Spring XML 配置
+
 ```xml
+<!-- 配置加载器 -->
+<bean id="cacheConfigBuilder" class="com.giants.cache.config.xml.CacheConfigXmlBuilder">
+    <constructor-arg value="default"/>
+    <constructor-arg value="giants-cache.xml"/>
+</bean>
+
+<!-- Spring Data Redis -->
 <bean id="jedisConnectionFactory"
       class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
     <property name="hostName" value="127.0.0.1"/>
@@ -552,9 +877,49 @@ Redis 后端以 Set 记录每个 `elementConfName` 对应的所有 Key，`remove
     <property name="redisTemplate" ref="redisTemplate"/>
 </bean>
 
+<!-- 缓存后端 -->
 <bean id="giantsCache" class="com.giants.cache.redis.impl.GiantsRedisImpl">
+    <constructor-arg ref="cacheConfigBuilder"/>      <!-- 必须注入 builder -->
     <property name="redisClient" ref="redisClient"/>
 </bean>
+
+<bean id="giantsCacheManager" class="com.giants.cache.core.GiantsCacheManager">
+    <constructor-arg ref="giantsCache"/>
+</bean>
+```
+
+#### 6.3.2 Spring Boot + Java Config
+
+```java
+@Configuration
+public class SpringDataRedisCacheConfiguration {
+    
+    @Bean
+    public RedisTemplate<byte[], byte[]> redisTemplate(RedisConnectionFactory factory) {
+        RedisTemplate<byte[], byte[]> template = new RedisTemplate<>();
+        template.setConnectionFactory(factory);
+        return template;
+    }
+    
+    @Bean
+    public RedisClient redisClient(RedisTemplate<byte[], byte[]> redisTemplate) {
+        SpringDataRedisClient client = new SpringDataRedisClient();
+        client.setRedisTemplate(redisTemplate);
+        return client;
+    }
+    
+    @Bean
+    public GiantsCache giantsCache(CacheConfigBuilder cacheConfigBuilder, RedisClient redisClient) {
+        GiantsRedisImpl cache = new GiantsRedisImpl(cacheConfigBuilder);
+        cache.setRedisClient(redisClient);
+        return cache;
+    }
+    
+    @Bean
+    public GiantsCacheManager giantsCacheManager(GiantsCache giantsCache) {
+        return new GiantsCacheManager(giantsCache);
+    }
+}
 ```
 
 > `GiantsRedisImpl` 与 `RedisClient` 解耦，切换 Jedis / Spring Data Redis 只需替换 `redisClient` bean，其余配置不变。
@@ -563,12 +928,42 @@ Redis 后端以 Set 记录每个 `elementConfName` 对应的所有 Key，`remove
 
 实现类 `com.giants.cache.memcached.impl.GiantsMemcachedImpl`，内置连接池管理。它在构造时调用 `MemcachedManager.initialize()`，默认加载 classpath 下的 **`memcached.xml`**。
 
+#### 6.4.1 传统 Spring XML 配置
+
 ```xml
-<bean id="giantsCache" class="com.giants.cache.memcached.impl.GiantsMemcachedImpl"/>
+<!-- 配置加载器 -->
+<bean id="cacheConfigBuilder" class="com.giants.cache.config.xml.CacheConfigXmlBuilder">
+    <constructor-arg value="default"/>
+    <constructor-arg value="giants-cache.xml"/>
+</bean>
+
+<!-- 缓存后端 -->
+<bean id="giantsCache" class="com.giants.cache.memcached.impl.GiantsMemcachedImpl">
+    <constructor-arg ref="cacheConfigBuilder"/>      <!-- 必须注入 builder -->
+</bean>
 
 <bean id="giantsCacheManager" class="com.giants.cache.core.GiantsCacheManager">
     <constructor-arg ref="giantsCache"/>
 </bean>
+```
+
+#### 6.4.2 Spring Boot + Java Config
+
+```java
+@Configuration
+public class MemcachedCacheConfiguration {
+    
+    @Bean
+    public GiantsCache giantsCache(CacheConfigBuilder cacheConfigBuilder) 
+            throws Exception {
+        return new GiantsMemcachedImpl(cacheConfigBuilder);
+    }
+    
+    @Bean
+    public GiantsCacheManager giantsCacheManager(GiantsCache giantsCache) {
+        return new GiantsCacheManager(giantsCache);
+    }
+}
 ```
 
 `memcached.xml` 定义连接池（`sockPool` 的 `poolName` 需与缓存模型名 `cacheModelName` 对应）：
@@ -607,8 +1002,41 @@ Redis 后端以 Set 记录每个 `elementConfName` 对应的所有 Key，`remove
 
 `com.giants.cache.nocaching.impl.NoCachingImpl` 是一个空实现（所有操作为 no-op），可在测试环境或临时关闭缓存时替换后端 bean，无需改动 AOP / 配置：
 
+#### 6.5.1 传统 Spring XML 配置
+
 ```xml
-<bean id="giantsCache" class="com.giants.cache.nocaching.impl.NoCachingImpl"/>
+<!-- 配置加载器 -->
+<bean id="cacheConfigBuilder" class="com.giants.cache.config.xml.CacheConfigXmlBuilder">
+    <constructor-arg value="default"/>
+    <constructor-arg value="giants-cache.xml"/>
+</bean>
+
+<!-- 无缓存实现 -->
+<bean id="giantsCache" class="com.giants.cache.nocaching.impl.NoCachingImpl">
+    <constructor-arg ref="cacheConfigBuilder"/>      <!-- 必须注入 builder -->
+</bean>
+
+<bean id="giantsCacheManager" class="com.giants.cache.core.GiantsCacheManager">
+    <constructor-arg ref="giantsCache"/>
+</bean>
+```
+
+#### 6.5.2 Spring Boot + Java Config
+
+```java
+@Configuration
+public class NoCachingConfiguration {
+    
+    @Bean
+    public GiantsCache giantsCache(CacheConfigBuilder cacheConfigBuilder) {
+        return new NoCachingImpl(cacheConfigBuilder);
+    }
+    
+    @Bean
+    public GiantsCacheManager giantsCacheManager(GiantsCache giantsCache) {
+        return new GiantsCacheManager(giantsCache);
+    }
+}
 ```
 
 ---
@@ -655,16 +1083,39 @@ Redis 后端以 Set 记录每个 `elementConfName` 对应的所有 Key，`remove
 
 ### 7.3 Session 后端 bean（以 Redis 为例）
 
+#### 7.3.1 传统 Spring XML 配置
+
 ```xml
+<!-- Redis Session 实现 -->
 <bean id="giantsSessionCache" class="com.giants.cache.redis.impl.GiantsSessionRedisImpl">
-    <property name="redisClient" ref="redisClient"/>
-    <property name="cacheKeyPrefix" value="session"/>   <!-- Key 前缀，最终形如 session:{id} -->
+    <property name="redisClient" ref="redisClient"/>     <!-- redisClient 配置见 6.2 节 -->
+    <property name="cacheKeyPrefix" value="session"/>    <!-- Key 前缀，最终形如 session:{id} -->
 </bean>
 ```
 
-- Redis：注入 `redisClient`（同 [6.2/6.3](#62-redisjedis)）。
-- EhCache：`GiantsSessionEhcacheImpl`，需注入 `cacheModel`（EhCache 中的 cache 名）。
-- Memcached：`GiantsSessionMemcachedImpl`（构造时初始化 `memcached.xml`）。
+#### 7.3.2 Spring Boot + Java Config
+
+```java
+@Configuration
+public class SessionCacheConfiguration {
+    
+    @Bean
+    public GiantsSessionCache giantsSessionCache(RedisClient redisClient) {
+        GiantsSessionRedisImpl sessionCache = new GiantsSessionRedisImpl();
+        sessionCache.setRedisClient(redisClient);
+        sessionCache.setCacheKeyPrefix("session");
+        return sessionCache;
+    }
+}
+```
+
+**其他后端实现：**
+
+- **Redis**：`GiantsSessionRedisImpl`，需注入 `redisClient`（同 [6.2/6.3](#62-redisjedis)）。
+- **EhCache**：`GiantsSessionEhcacheImpl`，需注入 `cacheModel`（EhCache 中的 cache 名，如 `"session"`）和可选的 `cacheManager`。
+- **Memcached**：`GiantsSessionMemcachedImpl`（构造时初始化 `memcached.xml`）。
+
+**注意**：`AbstractGiantsSessionCache` 在构造时会调用 `GiantsCacheManager.setGiantsSessionCache(this)` 把自己注册为全局 Session 缓存；`GiantsSessionFilter` 初始化时通过 `GiantsCacheManager.getGiantsSessionCache()` 取用。因此**只需在 Spring 中声明对应的 Session 实现 bean**，Filter 即可自动获取，无需显式注入。
 
 ### 7.4 行为说明
 
@@ -749,7 +1200,7 @@ if (lock != null) {
 
 | XML 元素 | 父元素 | 关键属性 | 用途 |
 | --- | --- | --- | --- |
-| `cacheConfig` | — | `name` | 配置根 |
+| `cacheConfig` | — | `name` | 配置根（XML 方式） |
 | `methodCacheModel` | `cacheConfig` | `name`、`defaultCache`、`defaultTimeToLive` | 方法缓存模型 |
 | `servletCacheModel` | `cacheConfig` | `name`、`defaultCache`、`defaultTimeToLive` | Servlet 缓存模型 |
 | `cacheElement` | `methodCacheModel` | `name`、`timeToLive` | 方法缓存规则 |
@@ -767,22 +1218,49 @@ if (lock != null) {
 
 | 组件 | 类 | 关键参数 |
 | --- | --- | --- |
-| 方法缓存切面 | `GiantsCacheAop` | `cacheModelName`、`cacheConfigFilePath`、`supportMultipleInstance` |
-| Servlet 缓存 Filter | `GiantsCacheFilter` | init-param：`cacheModelName`、`cacheConfigFilePath` |
+| 配置加载器（XML） | `CacheConfigXmlBuilder` | 构造参数：`cacheConfigKey`、`cacheConfigXmlFilePath` |
+| 配置加载器（Properties） | `CacheConfigPropertiesBuilder` | 构造参数：`cacheConfigKey`、`GiantsCacheConfigProperties` |
+| 方法缓存切面 | `GiantsCacheAop` | `cacheModelName`、`cacheConfigKey`、`supportMultipleInstance` |
+| Servlet 缓存 Filter | `GiantsCacheFilter` | init-param：`cacheModelName`、`cacheConfigKey` |
 | Session Filter | `GiantsSessionFilter` | init-param：`sessionIdName`、`sessionTimeout` |
 | 缓存管理器 | `GiantsCacheManager` | 构造参数：`GiantsCache` 实现 |
+| 后端实现 | `GiantsRedisImpl` / `GiantsEhcacheImpl` / ... | 构造参数：`CacheConfigBuilder`（**必须**） |
+
+**Spring Boot 配置属性：**
+
+| 配置项 | 模块 | 说明 |
+| --- | --- | --- |
+| `giants.cache.cache-config-key` | config-xml | 配置 key，默认 `default` |
+| `giants.cache.cache-config-xml-file-path` | config-xml | XML 文件路径，默认 `giants-cache.xml` |
+| `giants.cache.name` | config-properties | 配置名称 |
+| `giants.cache.config-map` | config-properties | `Map<String, CacheConfig>`，key 为 `cacheConfigKey` |
 
 ---
 
 ## 10. 常见问题（FAQ）
 
 **Q：缓存没生效？**
-- 确认 `cacheModelName` 与 XML 中模型 `name` 一致，且 `cacheConfigFilePath` 指向的文件在 classpath 中能被加载。
+- 确认 `cacheModelName` 与配置中模型 `name` 一致。
+- 确认 `cacheConfigKey` 与 `CacheConfigBuilder` 的 key 一致（默认都是 `"default"`）。
 - 方法缓存：确认切点表达式覆盖到目标类，且方法返回值非 `void`。
 - 确认 `cacheElement` 的 `name` 与目标类全名 / 方法全名 / 完整签名之一匹配。
+- 检查 `GiantsCacheManager.getInstance(cacheConfigKey)` 是否返回 `null`。
+
+**Q：启动时报错 "No matching bean of type 'CacheConfigBuilder'"？**
+- 检查是否引入了 `giants-cache-config-xml` 或 `giants-cache-config-properties` 模块。
+- 传统 Spring 项目需手动装配 `CacheConfigBuilder` bean。
+- 确认只引入了**一个**配置模块，不要同时引入 `config-xml` 和 `config-properties`。
+
+**Q：后端实例化时报错 "Constructor threw exception"？**
+- 1.2.0 版本所有后端实现（`GiantsRedisImpl`、`GiantsEhcacheImpl` 等）构造函数**强制要求 `CacheConfigBuilder` 参数**。
+- 检查 Spring 配置中是否忘记通过 `<constructor-arg>` 或构造函数参数注入 `cacheConfigBuilder`。
+
+**Q：`cacheConfigFilePath` 属性找不到？**
+- 1.2.0 已将 `cacheConfigFilePath` 重命名为 `cacheConfigKey`，`GiantsCacheAop` 和 `GiantsCacheFilter` 均使用新属性。
+- 配置文件路径由 `CacheConfigBuilder` 实现管理（如 `CacheConfigXmlBuilder` 的构造参数）。
 
 **Q：`timeToLive` 是毫秒还是秒？**
-- 秒。默认 `300`（5 分钟），`-1` 表示永不过期。
+- **秒**。默认 `300`（5 分钟），`-1` 表示永不过期。
 
 **Q：被缓存的对象需要实现 Serializable 吗？**
 - Redis / Memcached 等分布式后端需要序列化，请让缓存值、Session 属性实现 `Serializable`。EhCache 本地缓存虽不强制，但建议统一实现以便平滑切换后端。
@@ -795,8 +1273,24 @@ if (lock != null) {
 - 跨类关联：用 `clearCache` + `clearElement` 指定要连带清除的其他缓存元素。
 
 **Q：如何临时全局关闭缓存？**
-- 将 `giantsCache` bean 替换为 `NoCachingImpl`，无需改动 AOP / Filter / XML 配置。
+- 将 `giantsCache` bean 替换为 `NoCachingImpl`（构造时仍需注入 `CacheConfigBuilder`），无需改动 AOP / Filter / 配置。
 
 **Q：EhCache 报未定义 cache model？**
 - `GiantsEhcacheImpl` 要求 `ehcache.xml` 中存在与 `cacheModelName` 同名的 `<cache>`，请补充对应配置。
+
+**Q：Properties 配置方式如何实现动态刷新？**
+- 引入 `giants-cache-config-properties` 模块。
+- 添加 Spring Cloud Context 依赖（`spring-cloud-context`）。
+- 配合 Nacos Config 等配置中心，`GiantsCacheConfigProperties` 标注了 `@RefreshScope`，配置更新后自动生效。
+- 详见 [3.2.2 节](#322-spring-boot-自动配置properties-方式)。
+
+**Q：同时引入 config-xml 和 config-properties 会冲突吗？**
+- **会冲突**。两者都通过 `spring.factories` 自动注册 `CacheConfigBuilder` bean，同时引入会导致 Bean 定义冲突。按需选择**其中一个**。
+
+**Q：如何在一个项目中使用多个缓存配置？**
+- 定义多个 `CacheConfigBuilder` bean，每个使用不同的 `cacheConfigKey`。
+- 在 AOP / Filter 中通过 `cacheConfigKey` 属性指定使用哪个配置。
+- Properties 方式通过 `giants.cache.config-map` 的不同 key 定义多份配置。
+
+---
 

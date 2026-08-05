@@ -11,6 +11,8 @@
 
     <artifactId>giants-cache-config-properties</artifactId>
 
+    <name>giants-cache-config-properties</name>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
